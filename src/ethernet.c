@@ -8,8 +8,7 @@
  * 
  * @param buf 要处理的数据包
  */
-void ethernet_in(buf_t *buf)
-{
+void ethernet_in(buf_t *buf) {
     // TO-DO
 }
 /**

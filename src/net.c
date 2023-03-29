@@ -35,30 +35,29 @@ buf_t rxbuf, txbuf; //一个buf足够单线程使用
  * @brief 初始化协议栈
  * 
  */
-int net_init()
-{
-    map_init(&net_table, sizeof(uint16_t), sizeof(net_handler_t), 0, 0, NULL);
-    if (driver_open() == -1)
-        return -1;
+int net_init() {
+  map_init(&net_table, sizeof(uint16_t), sizeof(net_handler_t), 0, 0, NULL);
+  if (driver_open() == -1)
+    return -1;
 #ifdef ETHERNET
-    ethernet_init();
+  ethernet_init();
 #ifdef ARP
-    arp_init();
+  arp_init();
 #ifdef IP
-    ip_init();
+  ip_init();
 #ifdef ICMP
-    icmp_init();
+  icmp_init();
 #endif
 #ifdef UDP
-    udp_init();
+  udp_init();
 #endif
 #ifdef TCP
-    tcp_init();
+  tcp_init();
 #endif
 #endif
 #endif
 #endif
-    return 0;
+  return 0;
 }
 
 /**
@@ -67,9 +66,8 @@ int net_init()
  * @param protocol 协议号 
  * @param handler 该协议的in处理程序
  */
-void net_add_protocol(uint16_t protocol, net_handler_t handler)
-{
-    map_set(&net_table, &protocol, &handler);
+void net_add_protocol(uint16_t protocol, net_handler_t handler) {
+  map_set(&net_table, &protocol, &handler);
 }
 
 /**
@@ -80,24 +78,21 @@ void net_add_protocol(uint16_t protocol, net_handler_t handler)
  * @param src 源的本层协议地址，如mac或ip地址
  * @return int 成功为0，失败为-1
  */
-int net_in(buf_t *buf, uint16_t protocol, uint8_t *src)
-{
-    net_handler_t *handler = map_get(&net_table, &protocol);
-    if (handler)
-    {
-        (*handler)(buf, src);
-        return 0;
-    }
-    return -1;
+int net_in(buf_t *buf, uint16_t protocol, uint8_t *src) {
+  net_handler_t *handler = map_get(&net_table, &protocol);
+  if (handler) {
+    (*handler)(buf, src);
+    return 0;
+  }
+  return -1;
 }
 
 /**
  * @brief 一次协议栈轮询
  * 
  */
-void net_poll()
-{
+void net_poll() {
 #ifdef ETHERNET
-    ethernet_poll();
+  ethernet_poll();
 #endif
 }

@@ -16,9 +16,8 @@ map_t udp_table;
  * @param dst_ip 目的ip地址
  * @return uint16_t 伪校验和
  */
-static uint16_t udp_checksum(buf_t *buf, uint8_t *src_ip, uint8_t *dst_ip)
-{
-    // TO-DO
+static uint16_t udp_checksum(buf_t *buf, uint8_t *src_ip, uint8_t *dst_ip) {
+  // TO-DO
 }
 
 /**
@@ -27,9 +26,8 @@ static uint16_t udp_checksum(buf_t *buf, uint8_t *src_ip, uint8_t *dst_ip)
  * @param buf 要处理的包
  * @param src_ip 源ip地址
  */
-void udp_in(buf_t *buf, uint8_t *src_ip)
-{
-    // TO-DO
+void udp_in(buf_t *buf, uint8_t *src_ip) {
+  // TO-DO
 }
 
 /**
@@ -40,19 +38,17 @@ void udp_in(buf_t *buf, uint8_t *src_ip)
  * @param dst_ip 目的ip地址
  * @param dst_port 目的端口号
  */
-void udp_out(buf_t *buf, uint16_t src_port, uint8_t *dst_ip, uint16_t dst_port)
-{
-    // TO-DO
+void udp_out(buf_t *buf, uint16_t src_port, uint8_t *dst_ip, uint16_t dst_port) {
+  // TO-DO
 }
 
 /**
  * @brief 初始化udp协议
  * 
  */
-void udp_init()
-{
-    map_init(&udp_table, sizeof(uint16_t), sizeof(udp_handler_t), 0, 0, NULL);
-    net_add_protocol(NET_PROTOCOL_UDP, udp_in);
+void udp_init() {
+  map_init(&udp_table, sizeof(uint16_t), sizeof(udp_handler_t), 0, 0, NULL);
+  net_add_protocol(NET_PROTOCOL_UDP, udp_in);
 }
 
 /**
@@ -62,9 +58,8 @@ void udp_init()
  * @param handler 处理程序
  * @return int 成功为0，失败为-1
  */
-int udp_open(uint16_t port, udp_handler_t handler)
-{
-    return map_set(&udp_table, &port, &handler);
+int udp_open(uint16_t port, udp_handler_t handler) {
+  return map_set(&udp_table, &port, &handler);
 }
 
 /**
@@ -72,9 +67,8 @@ int udp_open(uint16_t port, udp_handler_t handler)
  * 
  * @param port 端口号
  */
-void udp_close(uint16_t port)
-{
-    map_delete(&udp_table, &port);
+void udp_close(uint16_t port) {
+  map_delete(&udp_table, &port);
 }
 
 /**
@@ -86,9 +80,8 @@ void udp_close(uint16_t port)
  * @param dst_ip 目的ip地址
  * @param dst_port 目的端口号
  */
-void udp_send(uint8_t *data, uint16_t len, uint16_t src_port, uint8_t *dst_ip, uint16_t dst_port)
-{
-    buf_init(&txbuf, len);
-    memcpy(txbuf.data, data, len);
-    udp_out(&txbuf, src_port, dst_ip, dst_port);
+void udp_send(uint8_t *data, uint16_t len, uint16_t src_port, uint8_t *dst_ip, uint16_t dst_port) {
+  buf_init(&txbuf, len);
+  memcpy(txbuf.data, data, len);
+  udp_out(&txbuf, src_port, dst_ip, dst_port);
 }

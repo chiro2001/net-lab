@@ -8,9 +8,8 @@
  * @param req_buf 收到的icmp请求包
  * @param src_ip 源ip地址
  */
-static void icmp_resp(buf_t *req_buf, uint8_t *src_ip)
-{
-    // TO-DO
+static void icmp_resp(buf_t *req_buf, uint8_t *src_ip) {
+  // TO-DO
 }
 
 /**
@@ -19,9 +18,8 @@ static void icmp_resp(buf_t *req_buf, uint8_t *src_ip)
  * @param buf 要处理的数据包
  * @param src_ip 源ip地址
  */
-void icmp_in(buf_t *buf, uint8_t *src_ip)
-{
-    // TO-DO
+void icmp_in(buf_t *buf, uint8_t *src_ip) {
+  // TO-DO
 }
 
 /**
@@ -31,15 +29,14 @@ void icmp_in(buf_t *buf, uint8_t *src_ip)
  * @param src_ip 源ip地址
  * @param code icmp code，协议不可达或端口不可达
  */
-void icmp_unreachable(buf_t *recv_buf, uint8_t *src_ip, icmp_code_t code)
-{
-    // TO-DO
+void icmp_unreachable(buf_t *recv_buf, uint8_t *src_ip, icmp_code_t code) {
+  // TO-DO
 }
 
 /**
  * @brief 初始化icmp协议
  * 
  */
-void icmp_init(){
-    net_add_protocol(NET_PROTOCOL_ICMP, icmp_in);
+void icmp_init() {
+  net_add_protocol(NET_PROTOCOL_ICMP, icmp_in);
 }
