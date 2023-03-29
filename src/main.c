@@ -4,6 +4,7 @@
 #include "http.h"
 #include "driver.h"
 #include "time.h"
+#include "debug_macros.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat="
@@ -37,7 +38,7 @@ void tcp_handler(tcp_connect_t *connect, connect_state_t state) {
 #endif
 
 int main(int argc, char const *argv[]) {
-
+  Log("Computer Network Lab");
   if (net_init() != 0) {
     printf("net init failed.");
     return -1;
