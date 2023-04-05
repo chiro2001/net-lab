@@ -58,7 +58,7 @@ void arp_print() {
 void arp_req(uint8_t *target_ip) {
   // init txbuf
   buf_init(&txbuf, sizeof(arp_pkt_t) + ARP_PADDING_SIZE);
-  arp_pkt_t *p = (arp_pkt_t *) &txbuf;
+  arp_pkt_t *p = (arp_pkt_t *) txbuf.data;
   // fill in padding
   memset(txbuf.data + sizeof(arp_pkt_t), 0, ARP_PADDING_SIZE);
   // fill in default data
@@ -76,7 +76,20 @@ void arp_req(uint8_t *target_ip) {
  * @param target_mac 目标mac地址
  */
 void arp_resp(uint8_t *target_ip, uint8_t *target_mac) {
-  // TODO
+  // init txbuf
+  buf_init(&txbuf, sizeof(arp_pkt_t) + ARP_PADDING_SIZE);
+  arp_pkt_t *p = (arp_pkt_t *) txbuf.data;
+  // fill in padding
+  memset(txbuf.data + sizeof(arp_pkt_t), 0, ARP_PADDING_SIZE);
+  // fill in default data
+  memcpy(p, &arp_init_pkt, sizeof(arp_pkt_t));
+  // fill in target ip, target mac, sender ip, sender mac
+  memcpy(p->target_ip, target_ip, NET_IP_LEN);
+  memcpy(p->target_mac, target_mac, NET_IP_LEN);
+  memcpy(p->sender_ip, net_if_ip, NET_MAC_LEN);
+  memcpy(p->sender_mac, net_if_mac, NET_MAC_LEN);
+  // call ethernet layer
+  ethernet_out(&txbuf, target_mac, NET_PROTOCOL_ARP);
 }
 
 /**
@@ -86,7 +99,38 @@ void arp_resp(uint8_t *target_ip, uint8_t *target_mac) {
  * @param src_mac 源mac地址
  */
 void arp_in(buf_t *buf, uint8_t *src_mac) {
-  // TODO
+  // check package length
+  if (buf->len < sizeof(arp_pkt_t)) {
+    return;
+  }
+  // check package
+  arp_pkt_t *p = (arp_pkt_t *) buf->data;
+  if (p->pro_type16 == constswap16(NET_PROTOCOL_ARP) &&
+      p->hw_len == NET_MAC_LEN && p->pro_len == NET_IP_LEN &&
+      memcmp(p->target_ip, net_if_ip, NET_MAC_LEN) == 0 &&
+      memcmp(p->target_mac, net_if_mac, NET_MAC_LEN) == 0) {
+    // handle arp reply
+    if (p->hw_type16 == constswap16(ARP_REPLY)) {
+      // update arp table
+      map_set(&arp_table, p->sender_ip, p->sender_mac);
+      // flush pending buffer
+      buf_t *pending = (buf_t *) map_get(&arp_buf, p->sender_ip);
+      if (pending) {
+        // re-send this pending packet
+        ethernet_out(pending, p->sender_mac, NET_PROTOCOL_ARP);
+        // remove this item in pending buffer
+        map_delete(&arp_buf, p->target_ip);
+      }
+    } else {
+      // handle arp request
+      if (p->hw_type16 == constswap16(ARP_REQUEST)) {
+        // update arp table
+        map_set(&arp_table, p->sender_ip, p->sender_mac);
+        // send reply
+        arp_resp(p->sender_ip, p->sender_mac);
+      }
+    }
+  }
 }
 
 /**
@@ -109,7 +153,7 @@ void arp_out(buf_t *buf, uint8_t *ip) {
       // not found, send a request
       arp_req(ip);
     }
-    // TODO: if cache miss, what will this package do? dropped?
+    // TODO: larger pending buffer
   } else {
     // found, send the packet
     ethernet_out(buf, mac, NET_PROTOCOL_ARP);

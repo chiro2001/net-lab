@@ -43,6 +43,7 @@ void ethernet_out(buf_t *buf, const uint8_t *mac, net_protocol_t protocol) {
   memcpy(hdr->src, net_if_mac, NET_MAC_LEN);
   memcpy(hdr->dst, mac, NET_MAC_LEN);
   hdr->protocol16 = protocol;
+  driver_send(buf);
 }
 
 /**
