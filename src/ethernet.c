@@ -1,12 +1,6 @@
 #include "ethernet.h"
-#include "utils.h"
 #include "driver.h"
-#include "arp.h"
-#include "ip.h"
 #include "debug_macros.h"
-#include "tcp.h"
-#include "udp.h"
-#include "icmp.h"
 
 /**
  * @brief 处理一个收到的数据包

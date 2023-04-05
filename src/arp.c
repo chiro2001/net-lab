@@ -56,7 +56,17 @@ void arp_print() {
  * @param target_ip 想要知道的目标的ip地址
  */
 void arp_req(uint8_t *target_ip) {
-  // TODO
+  // init txbuf
+  buf_init(&txbuf, sizeof(arp_pkt_t) + ARP_PADDING_SIZE);
+  arp_pkt_t *p = (arp_pkt_t *) &txbuf;
+  // fill in padding
+  memset(txbuf.data + sizeof(arp_pkt_t), 0, ARP_PADDING_SIZE);
+  // fill in default data
+  memcpy(p, &arp_init_pkt, sizeof(arp_pkt_t));
+  // fill in target ip
+  memcpy(p->target_ip, target_ip, NET_IP_LEN);
+  // call ethernet layer
+  ethernet_out(&txbuf, net_broadcast_mac, NET_PROTOCOL_ARP);
 }
 
 /**
@@ -84,10 +94,26 @@ void arp_in(buf_t *buf, uint8_t *src_mac) {
  * 
  * @param buf 要处理的数据包
  * @param ip 目标ip地址
- * @param protocol 上层协议
  */
 void arp_out(buf_t *buf, uint8_t *ip) {
-  // TODO
+  // find mac in arp table
+  uint8_t *mac = (uint8_t *) map_get(&arp_table, ip);
+  if (!mac) {
+    // not found, see if there is a pending request
+    buf_t *pending = (buf_t *) map_get(&arp_buf, ip);
+    if (pending) {
+      // found, drop this request
+    } else {
+      // add to pending buffer
+      map_set(&arp_buf, ip, buf);
+      // not found, send a request
+      arp_req(ip);
+    }
+    // TODO: if cache miss, what will this package do? dropped?
+  } else {
+    // found, send the packet
+    ethernet_out(buf, mac, NET_PROTOCOL_ARP);
+  }
 }
 
 /**
@@ -98,5 +124,6 @@ void arp_init() {
   map_init(&arp_table, NET_IP_LEN, NET_MAC_LEN, 0, ARP_TIMEOUT_SEC, NULL);
   map_init(&arp_buf, NET_IP_LEN, sizeof(buf_t), 0, ARP_MIN_INTERVAL, buf_copy);
   net_add_protocol(NET_PROTOCOL_ARP, arp_in);
+  // send a gratuitous arp packet
   arp_req(net_if_ip);
 }

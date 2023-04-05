@@ -22,6 +22,8 @@ typedef struct arp_pkt {
 
 #pragma pack()
 
+#define ARP_PADDING_SIZE 18
+
 void arp_init();
 
 void arp_print();
