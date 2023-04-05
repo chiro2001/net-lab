@@ -22,7 +22,7 @@ void ethernet_in(buf_t *buf) {
       buf_remove_header(buf, sizeof(ether_hdr_t));
       net_in(buf, length_type, hdr->src);
     } else {
-      // invalid length/type field, drop this packet
+      Log("ethernet: invalid length/type field, drop this packet");
       return;
     }
   } else {

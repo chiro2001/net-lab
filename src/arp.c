@@ -3,6 +3,7 @@
 #include "net.h"
 #include "arp.h"
 #include "ethernet.h"
+#include "debug_macros.h"
 
 /**
  * @brief 初始的arp包
@@ -66,6 +67,7 @@ void arp_req(uint8_t *target_ip) {
   // fill in target ip
   memcpy(p->target_ip, target_ip, NET_IP_LEN);
   // call ethernet layer
+  p->opcode16 = constswap16(ARP_REQUEST);
   ethernet_out(&txbuf, net_broadcast_mac, NET_PROTOCOL_ARP);
 }
 
@@ -85,9 +87,10 @@ void arp_resp(uint8_t *target_ip, uint8_t *target_mac) {
   memcpy(p, &arp_init_pkt, sizeof(arp_pkt_t));
   // fill in target ip, target mac, sender ip, sender mac
   memcpy(p->target_ip, target_ip, NET_IP_LEN);
-  memcpy(p->target_mac, target_mac, NET_IP_LEN);
-  memcpy(p->sender_ip, net_if_ip, NET_MAC_LEN);
+  memcpy(p->target_mac, target_mac, NET_MAC_LEN);
+  memcpy(p->sender_ip, net_if_ip, NET_IP_LEN);
   memcpy(p->sender_mac, net_if_mac, NET_MAC_LEN);
+  p->opcode16 = constswap16(ARP_REPLY);
   // call ethernet layer
   ethernet_out(&txbuf, target_mac, NET_PROTOCOL_ARP);
 }
@@ -101,35 +104,43 @@ void arp_resp(uint8_t *target_ip, uint8_t *target_mac) {
 void arp_in(buf_t *buf, uint8_t *src_mac) {
   // check package length
   if (buf->len < sizeof(arp_pkt_t)) {
+    Log("arp: invalid package length");
     return;
   }
   // check package
   arp_pkt_t *p = (arp_pkt_t *) buf->data;
-  if (p->pro_type16 == constswap16(NET_PROTOCOL_ARP) &&
-      p->hw_len == NET_MAC_LEN && p->pro_len == NET_IP_LEN &&
-      memcmp(p->target_ip, net_if_ip, NET_MAC_LEN) == 0 &&
-      memcmp(p->target_mac, net_if_mac, NET_MAC_LEN) == 0) {
+  if (p->pro_type16 == constswap16(NET_PROTOCOL_IP) &&
+      p->hw_len == NET_MAC_LEN && p->pro_len == NET_IP_LEN) {
     // handle arp reply
-    if (p->hw_type16 == constswap16(ARP_REPLY)) {
-      // update arp table
+    Log("arp in: arp package from mac %s; sender ip=%s, sender mac=%s, target ip=%s, target mac=%s, hw_type=%d, opcode=%d",
+        mactos(src_mac), iptos(p->sender_ip), mactos(p->sender_mac), iptos(p->target_ip),
+        mactos(p->target_mac), swap16(p->hw_type16), swap16(p->opcode16));
+    if (p->opcode16 == constswap16(ARP_REPLY) && memcmp(p->target_ip, net_if_ip, NET_IP_LEN) == 0 &&
+        memcmp(p->target_mac, net_if_mac, NET_MAC_LEN) == 0) {
+      Log("arp in: this is a arp reply");
       map_set(&arp_table, p->sender_ip, p->sender_mac);
+      arp_print();
       // flush pending buffer
       buf_t *pending = (buf_t *) map_get(&arp_buf, p->sender_ip);
       if (pending) {
-        // re-send this pending packet
-        ethernet_out(pending, p->sender_mac, NET_PROTOCOL_ARP);
+        Log("arp in: re-send the pending packet");
+        ethernet_out(pending, p->sender_mac, NET_PROTOCOL_IP);
         // remove this item in pending buffer
         map_delete(&arp_buf, p->target_ip);
       }
     } else {
       // handle arp request
-      if (p->hw_type16 == constswap16(ARP_REQUEST)) {
+      if (p->opcode16 == constswap16(ARP_REQUEST) && memcmp(p->target_ip, net_if_ip, NET_IP_LEN) == 0) {
+        Log("arp in: this is a arp request, from ip=%s, mac=%s", iptos(p->sender_ip), mactos(p->sender_mac));
         // update arp table
         map_set(&arp_table, p->sender_ip, p->sender_mac);
         // send reply
         arp_resp(p->sender_ip, p->sender_mac);
       }
     }
+  } else {
+    Log("arp in: invalid package! pro_type=%x, target ip=%s, target mac=%s", swap16(p->pro_type16), iptos(p->target_ip),
+        mactos(p->target_mac));
   }
 }
 
@@ -143,11 +154,13 @@ void arp_out(buf_t *buf, uint8_t *ip) {
   // find mac in arp table
   uint8_t *mac = (uint8_t *) map_get(&arp_table, ip);
   if (!mac) {
-    // not found, see if there is a pending request
+    arp_print();
+    Log("arp: %s not found, see if there is a pending request...", iptos(ip));
     buf_t *pending = (buf_t *) map_get(&arp_buf, ip);
     if (pending) {
-      // found, drop this request
+      Log("arp: a pending request found, drop this request");
     } else {
+      Log("arp: %s was added to arp buffer, and a request was sent", iptos(ip));
       // add to pending buffer
       map_set(&arp_buf, ip, buf);
       // not found, send a request
