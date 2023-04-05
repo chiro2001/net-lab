@@ -52,7 +52,8 @@ void ip_in(buf_t *buf, uint8_t *src_mac) {
   // remove ip header
   buf_remove_header(buf, sizeof(ip_hdr_t));
   if (net_in(buf, p->protocol, src_mac) < 0) {
-    // unrecognized protocol, send icmp protocol unreachable
+    Log("ip: in, unrecognized protocol %d, send icmp protocol unreachable", p->protocol);
+    buf_add_header(buf, sizeof(ip_hdr_t));
     icmp_unreachable(buf, p->src_ip, ICMP_CODE_PROTOCOL_UNREACH);
   }
 }
