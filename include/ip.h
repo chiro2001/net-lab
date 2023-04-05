@@ -23,6 +23,8 @@ typedef struct ip_hdr {
 #define IP_HDR_OFFSET_PER_BYTE 8   //ip分片偏移长度单位
 #define IP_VERSION_4 4             //ipv4
 #define IP_MORE_FRAGMENT (1 << 13) //ip分片mf位
+#define IP_DO_NOT_FRAGMENT (1 << 14) //ip分片df位
+#define IP_OUT_TTL 64              //ip包默认生存时间
 
 void ip_in(buf_t *buf, uint8_t *src_mac);
 

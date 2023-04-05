@@ -5,6 +5,8 @@
 #include "icmp.h"
 #include "debug_macros.h"
 
+static uint16_t ip_id = 0;
+
 /**
  * @brief 处理一个收到的数据包
  * 
@@ -23,7 +25,7 @@ void ip_in(buf_t *buf, uint8_t *src_mac) {
     return;
   }
   // check version, support ipv4 only
-  if (p->version != 4) {
+  if (p->version != IP_VERSION_4) {
     Log("ip: invalid version %d", p->version);
     return;
   }
@@ -32,7 +34,28 @@ void ip_in(buf_t *buf, uint8_t *src_mac) {
     Log("ip: invalid header length %d", p->hdr_len);
     return;
   }
-
+  // check DF bit
+  if (p->flags_fragment16 & IP_DO_NOT_FRAGMENT && buf->len > ETHERNET_MAX_TRANSPORT_UNIT) {
+    Log("ip: DF bit set, but it is a large frame");
+    icmp_unreachable(buf, p->src_ip, ICMP_CODE_PROTOCOL_UNREACH);
+    return;
+  }
+  // checksum
+  uint16_t checksum_expected = p->hdr_checksum16;
+  p->hdr_checksum16 = 0;
+  uint16_t checksum_real = checksum16((uint16_t *) buf->data, buf->len);
+  if (checksum_expected != checksum_real) {
+    Log("ip: checksum failed! expected: %x, real: %x", checksum_expected, checksum_real);
+    return;
+  }
+  // removing paddings
+  buf_remove_padding(buf, buf->len - (p->hdr_len << 2));
+  // remove ip header
+  buf_remove_header(buf, sizeof(ip_hdr_t));
+  if (net_in(buf, p->protocol, src_mac) < 0) {
+    // unrecognized protocol, send icmp protocol unreachable
+    icmp_unreachable(buf, p->src_ip, ICMP_CODE_PROTOCOL_UNREACH);
+  }
 }
 
 /**
@@ -46,7 +69,24 @@ void ip_in(buf_t *buf, uint8_t *src_mac) {
  * @param mf 分片mf标志，是否有下一个分片
  */
 void ip_fragment_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol, int id, uint16_t offset, int mf) {
-  // TODO
+  buf_add_header(buf, sizeof(ip_hdr_t));
+  ip_hdr_t *p = (ip_hdr_t *) buf->data;
+  p->version = 4;
+  p->hdr_len = sizeof(ip_hdr_t) >> 2;
+  p->tos = 0;
+  p->total_len16 = swap16(buf->len);
+  p->id16 = id;
+  p->flags_fragment16 = (mf ? IP_MORE_FRAGMENT : 0) | (offset >> 3);
+  p->ttl = IP_OUT_TTL;
+  p->protocol = protocol;
+  p->hdr_checksum16 = 0;
+  // fill in ip data
+  memcpy(p->dst_ip, ip, NET_IP_LEN);
+  memcpy(p->dst_ip, net_if_ip, NET_IP_LEN);
+  // calculate checksum
+  p->hdr_checksum16 = checksum16((uint16_t *) buf->data, buf->len);
+  // send package
+  arp_out(buf, ip);
 }
 
 /**
@@ -57,7 +97,32 @@ void ip_fragment_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol, int id, u
  * @param protocol 上层协议
  */
 void ip_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol) {
-  // TODO
+  // check if ip package larger than MTU - ip header
+  const size_t ip_max_length = ETHERNET_MAX_TRANSPORT_UNIT - sizeof(ip_hdr_t);
+  if (buf->len > ip_max_length) {
+    // split this package to multy packages, backup buf data
+    size_t original_len = buf->len;
+    uint8_t *original_data = buf->data;
+    buf->len = ip_max_length;
+    size_t offset = 0;
+    bool done = false;
+    while (!done) {
+      if (offset + ip_max_length <= original_len) {
+        ip_fragment_out(buf, ip, protocol, ip_id, offset, 1);
+        offset += ip_max_length;
+        buf->data += ip_max_length;
+      } else {
+        buf->len = original_len - offset;
+        ip_fragment_out(buf, ip, protocol, ip_id++, offset, 0);
+        done = true;
+      }
+    }
+    // restore this buf
+    buf->data = original_data;
+    buf->len = original_len;
+  } else {
+    ip_fragment_out(buf, ip, protocol, ip_id++, 0, 0);
+  }
 }
 
 /**
