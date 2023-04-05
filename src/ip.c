@@ -68,14 +68,15 @@ void ip_in(buf_t *buf, uint8_t *src_mac) {
  * @param mf 分片mf标志，是否有下一个分片
  */
 void ip_fragment_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol, int id, uint16_t offset, int mf) {
+  Log("ip: ip_fragment_out ip=%s, id=%d, offset=%d, mf=%d, len=%zu", iptos(ip), id, offset, mf, buf->len);
   buf_add_header(buf, sizeof(ip_hdr_t));
   ip_hdr_t *p = (ip_hdr_t *) buf->data;
-  p->version = 4;
+  p->version = IP_VERSION_4;
   p->hdr_len = sizeof(ip_hdr_t) >> 2;
   p->tos = 0;
   p->total_len16 = swap16(buf->len);
   p->id16 = swap16(id);
-  p->flags_fragment16 = (mf ? IP_MORE_FRAGMENT : 0) | (offset >> 3);
+  p->flags_fragment16 = swap16((mf ? IP_MORE_FRAGMENT : 0) | (offset >> 3));
   p->ttl = IP_OUT_TTL;
   p->protocol = protocol;
   p->hdr_checksum16 = 0;
@@ -99,17 +100,27 @@ void ip_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol) {
   // check if ip package larger than MTU - ip header
   const size_t ip_max_length = ETHERNET_MAX_TRANSPORT_UNIT - sizeof(ip_hdr_t);
   if (buf->len > ip_max_length) {
+    Log("ip: handle large package(%zu bytes)", buf->len);
     // split this package to multy packages, backup buf data
     size_t original_len = buf->len;
     uint8_t *original_data = buf->data;
     buf->len = ip_max_length;
     size_t offset = 0;
     bool done = false;
+    uint8_t backup[sizeof(ip_hdr_t)];
+    // FIXME: this is a tricky way to handle large package, which reduce data copy but require lower layer see package as immutable
     while (!done) {
       if (offset + ip_max_length <= original_len) {
+        // backup data in header area
+        uint8_t *data_now = buf->data;
+        memcpy(backup, data_now, sizeof(ip_hdr_t));
         ip_fragment_out(buf, ip, protocol, ip_id, offset, 1);
+        // restore backup data
+        memcpy(data_now, backup, sizeof(ip_hdr_t));
         offset += ip_max_length;
-        buf->data += ip_max_length;
+        buf->data = data_now + ip_max_length;
+        // buf->len was changed in ip_fragment_out
+        buf->len = ip_max_length;
       } else {
         buf->len = original_len - offset;
         ip_fragment_out(buf, ip, protocol, ip_id++, offset, 0);
@@ -120,6 +131,7 @@ void ip_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol) {
     buf->data = original_data;
     buf->len = original_len;
   } else {
+    Log("ip: handle small package(%zu bytes)", buf->len);
     ip_fragment_out(buf, ip, protocol, ip_id++, 0, 0);
   }
 }
