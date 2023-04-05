@@ -3,6 +3,7 @@
 #include "ethernet.h"
 #include "arp.h"
 #include "icmp.h"
+#include "debug_macros.h"
 
 /**
  * @brief 处理一个收到的数据包
@@ -11,7 +12,27 @@
  * @param src_mac 源mac地址
  */
 void ip_in(buf_t *buf, uint8_t *src_mac) {
-  // TODO
+  // check package length
+  if (buf->len < sizeof(ip_hdr_t)) {
+    Log("ip: package too short");
+    return;
+  }
+  ip_hdr_t *p = (ip_hdr_t *) buf->data;
+  if (buf->len < p->hdr_len << 2) {
+    Log("ip: package shorter than header expected");
+    return;
+  }
+  // check version, support ipv4 only
+  if (p->version != 4) {
+    Log("ip: invalid version %d", p->version);
+    return;
+  }
+  // check header length
+  if (p->hdr_len < 5) {
+    Log("ip: invalid header length %d", p->hdr_len);
+    return;
+  }
+
 }
 
 /**

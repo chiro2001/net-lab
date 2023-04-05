@@ -72,5 +72,11 @@ uint8_t ip_prefix_match(uint8_t *ipa, uint8_t *ipb) {
  * @return uint16_t 校验和
  */
 uint16_t checksum16(uint16_t *data, size_t len) {
-  // TODO
+  uint32_t crc = 0;
+  size_t i;
+  for (i = 0; i < (len >> 1); i++) crc += data[i];
+  // is odd, add last byte
+  if (len & 1) crc += *((uint8_t *) (data) + (len - 1));
+  while (crc & 0xffff0000) crc = (crc & 0xffff) + (crc >> 16);
+  return (uint16_t) (~crc);
 }
