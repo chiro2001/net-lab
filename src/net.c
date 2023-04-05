@@ -18,6 +18,7 @@ map_t net_table;
  * 
  */
 uint8_t net_if_mac[NET_MAC_LEN] = NET_IF_MAC;
+uint8_t net_broadcast_mac[NET_MAC_LEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 /**
  * @brief 网卡IP地址
