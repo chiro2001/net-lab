@@ -108,7 +108,8 @@ void ip_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol) {
     size_t offset = 0;
     bool done = false;
     uint8_t backup[sizeof(ip_hdr_t)];
-    // FIXME: this is a tricky way to handle large package, which reduce data copy but require lower layer see package as immutable
+    // FIXME: this is a tricky way to handle large package
+    //  which reduce data copy but require lower layers to see package as immutable
     while (!done) {
       if (offset + ip_max_length <= original_len) {
         // backup data in header area
