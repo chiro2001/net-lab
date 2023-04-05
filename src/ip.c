@@ -1,6 +1,5 @@
 #include "net.h"
 #include "ip.h"
-#include "ethernet.h"
 #include "arp.h"
 #include "icmp.h"
 #include "debug_macros.h"
@@ -43,7 +42,7 @@ void ip_in(buf_t *buf, uint8_t *src_mac) {
   // checksum
   uint16_t checksum_expected = p->hdr_checksum16;
   p->hdr_checksum16 = 0;
-  uint16_t checksum_real = checksum16((uint16_t *) buf->data, buf->len);
+  uint16_t checksum_real = checksum16((uint16_t *) buf->data, sizeof(ip_hdr_t));
   if (checksum_expected != checksum_real) {
     Log("ip: checksum failed! expected: %x, real: %x", checksum_expected, checksum_real);
     return;
@@ -75,16 +74,16 @@ void ip_fragment_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol, int id, u
   p->hdr_len = sizeof(ip_hdr_t) >> 2;
   p->tos = 0;
   p->total_len16 = swap16(buf->len);
-  p->id16 = id;
+  p->id16 = swap16(id);
   p->flags_fragment16 = (mf ? IP_MORE_FRAGMENT : 0) | (offset >> 3);
   p->ttl = IP_OUT_TTL;
   p->protocol = protocol;
   p->hdr_checksum16 = 0;
   // fill in ip data
   memcpy(p->dst_ip, ip, NET_IP_LEN);
-  memcpy(p->dst_ip, net_if_ip, NET_IP_LEN);
+  memcpy(p->src_ip, net_if_ip, NET_IP_LEN);
   // calculate checksum
-  p->hdr_checksum16 = checksum16((uint16_t *) buf->data, buf->len);
+  p->hdr_checksum16 = checksum16((uint16_t *) buf->data, sizeof(ip_hdr_t));
   // send package
   arp_out(buf, ip);
 }
