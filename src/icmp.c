@@ -9,7 +9,7 @@
  * @param src_ip 源ip地址
  */
 static void icmp_resp(buf_t *req_buf, uint8_t *src_ip) {
-  // TO-DO
+  // TODO
 }
 
 /**
@@ -19,7 +19,7 @@ static void icmp_resp(buf_t *req_buf, uint8_t *src_ip) {
  * @param src_ip 源ip地址
  */
 void icmp_in(buf_t *buf, uint8_t *src_ip) {
-  // TO-DO
+  // TODO
 }
 
 /**
@@ -30,7 +30,7 @@ void icmp_in(buf_t *buf, uint8_t *src_ip) {
  * @param code icmp code，协议不可达或端口不可达
  */
 void icmp_unreachable(buf_t *recv_buf, uint8_t *src_ip, icmp_code_t code) {
-  // TO-DO
+  // TODO
 }
 
 /**

@@ -11,7 +11,7 @@
  * @param src_mac 源mac地址
  */
 void ip_in(buf_t *buf, uint8_t *src_mac) {
-  // TO-DO
+  // TODO
 }
 
 /**
@@ -25,7 +25,7 @@ void ip_in(buf_t *buf, uint8_t *src_mac) {
  * @param mf 分片mf标志，是否有下一个分片
  */
 void ip_fragment_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol, int id, uint16_t offset, int mf) {
-  // TO-DO
+  // TODO
 }
 
 /**
@@ -36,7 +36,7 @@ void ip_fragment_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol, int id, u
  * @param protocol 上层协议
  */
 void ip_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol) {
-  // TO-DO
+  // TODO
 }
 
 /**

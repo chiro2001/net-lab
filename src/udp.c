@@ -17,7 +17,7 @@ map_t udp_table;
  * @return uint16_t 伪校验和
  */
 static uint16_t udp_checksum(buf_t *buf, uint8_t *src_ip, uint8_t *dst_ip) {
-  // TO-DO
+  // TODO
 }
 
 /**
@@ -27,7 +27,7 @@ static uint16_t udp_checksum(buf_t *buf, uint8_t *src_ip, uint8_t *dst_ip) {
  * @param src_ip 源ip地址
  */
 void udp_in(buf_t *buf, uint8_t *src_ip) {
-  // TO-DO
+  // TODO
 }
 
 /**
@@ -39,7 +39,7 @@ void udp_in(buf_t *buf, uint8_t *src_ip) {
  * @param dst_port 目的端口号
  */
 void udp_out(buf_t *buf, uint16_t src_port, uint8_t *dst_ip, uint16_t dst_port) {
-  // TO-DO
+  // TODO
 }
 
 /**

@@ -56,7 +56,7 @@ void arp_print() {
  * @param target_ip 想要知道的目标的ip地址
  */
 void arp_req(uint8_t *target_ip) {
-  // TO-DO
+  // TODO
 }
 
 /**
@@ -66,7 +66,7 @@ void arp_req(uint8_t *target_ip) {
  * @param target_mac 目标mac地址
  */
 void arp_resp(uint8_t *target_ip, uint8_t *target_mac) {
-  // TO-DO
+  // TODO
 }
 
 /**
@@ -76,7 +76,7 @@ void arp_resp(uint8_t *target_ip, uint8_t *target_mac) {
  * @param src_mac 源mac地址
  */
 void arp_in(buf_t *buf, uint8_t *src_mac) {
-  // TO-DO
+  // TODO
 }
 
 /**
@@ -87,7 +87,7 @@ void arp_in(buf_t *buf, uint8_t *src_mac) {
  * @param protocol 上层协议
  */
 void arp_out(buf_t *buf, uint8_t *ip) {
-  // TO-DO
+  // TODO
 }
 
 /**
