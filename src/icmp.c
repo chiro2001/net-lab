@@ -12,8 +12,8 @@
 static void icmp_resp(buf_t *req_buf, uint8_t *src_ip) {
   Log("icmp: resp, req_buf len %zu", req_buf->len);
   // init txbuf, icmp reply should copy request data
-  // buf_copy(&txbuf, req_buf, 0);
-  buf_init(&txbuf, 8);
+  buf_copy(&txbuf, req_buf, 0);
+  // buf_init(&txbuf, 8);
   icmp_hdr_t *p = (icmp_hdr_t *) txbuf.data;
   // icmp_hdr_t *recv = (icmp_hdr_t *) req_buf->data;
   // only ping

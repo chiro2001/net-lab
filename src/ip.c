@@ -48,6 +48,7 @@ void ip_in(buf_t *buf, uint8_t *src_mac) {
     Log("ip: checksum failed! expected: %x, real: %x", checksum_expected, checksum_real);
     return;
   }
+  p->hdr_checksum16 = checksum_expected;
   uint16_t total_len = swap16(p->total_len16);
   Log("ip: before remove padding, len=%zu, total_len16=%d", buf->len, total_len);
   // removing paddings
