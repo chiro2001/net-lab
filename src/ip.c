@@ -131,7 +131,8 @@ void ip_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol) {
         buf->len = ip_max_length;
       } else {
         buf->len = original_len - offset;
-        ip_fragment_out(buf, ip, protocol, ip_id++, offset, 0);
+        // last len may be zero
+        if (buf->len) ip_fragment_out(buf, ip, protocol, ip_id++, offset, 0);
         done = true;
       }
     }
