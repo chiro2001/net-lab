@@ -4,6 +4,7 @@
 #include "ethernet.h"
 #include "arp.h"
 #include "ip.h"
+#include "debug_macros.h"
 
 extern FILE *pcap_in;
 extern FILE *pcap_out;
@@ -50,9 +51,9 @@ int main(int argc, char *argv[]) {
   net_init();
   log_tab_buf();
   int i = 1;
-  printf("\e[0;34mFeeding input %02d", i);
+  // printf("\e[0;34mFeeding input %02d", i);
   while ((ret = driver_recv(&buf)) > 0) {
-    printf("\b\b%02d", i);
+    Log("Feeding input %02d", i);
     fprintf(control_flow, "\nRound %02d -----------------------------\n", i++);
     if (memcmp(buf.data, my_mac, 6) && memcmp(buf.data, boardcast_mac, 6)) {
       buf_t buf2;

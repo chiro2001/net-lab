@@ -48,11 +48,14 @@ void ip_in(buf_t *buf, uint8_t *src_mac) {
     Log("ip: checksum failed! expected: %x, real: %x", checksum_expected, checksum_real);
     return;
   }
+  uint16_t total_len = swap16(p->total_len16);
+  Log("ip: before remove padding, len=%zu, total_len16=%d", buf->len, total_len);
   // removing paddings
-  buf_remove_padding(buf, buf->len - (p->hdr_len << 2));
+  buf_remove_padding(buf, buf->len - total_len);
+  Log("ip: after remove padding, len=%zu", buf->len);
   // remove ip header
   buf_remove_header(buf, sizeof(ip_hdr_t));
-  if (net_in(buf, p->protocol, src_mac) < 0) {
+  if (net_in(buf, p->protocol, p->src_ip) < 0) {
     Log("ip: in, unrecognized protocol %d, send icmp protocol unreachable", p->protocol);
     buf_add_header(buf, sizeof(ip_hdr_t));
     icmp_unreachable(buf, p->src_ip, ICMP_CODE_PROTOCOL_UNREACH);

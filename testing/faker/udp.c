@@ -1,4 +1,5 @@
 #include "udp.h"
+#include "debug_macros.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -52,4 +53,5 @@ void udp_send(uint8_t *data, uint16_t len, uint16_t src_port, uint8_t *dest_ip, 
 void udp_in(buf_t *buf, uint8_t *src_ip) {
   fprintf(udp_fout, "udp_in:\n\tsrc_ip:%s\n", print_ip(src_ip));
   fprint_buf(udp_fout, buf);
+  Log("udp: in, src_ip=%s, buf len=%zu", print_ip(src_ip), buf->len);
 }
