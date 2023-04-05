@@ -126,7 +126,7 @@ void arp_in(buf_t *buf, uint8_t *src_mac) {
         Log("arp in: re-send the pending packet");
         ethernet_out(pending, p->sender_mac, NET_PROTOCOL_IP);
         // remove this item in pending buffer
-        map_delete(&arp_buf, p->target_ip);
+        map_delete(&arp_buf, p->sender_ip);
       }
     } else {
       // handle arp request
@@ -169,7 +169,7 @@ void arp_out(buf_t *buf, uint8_t *ip) {
     // TODO: larger pending buffer
   } else {
     // found, send the packet
-    ethernet_out(buf, mac, NET_PROTOCOL_ARP);
+    ethernet_out(buf, mac, NET_PROTOCOL_IP);
   }
 }
 
