@@ -102,6 +102,7 @@ void arp_resp(uint8_t *target_ip, uint8_t *target_mac) {
  * @param src_mac 源mac地址
  */
 void arp_in(buf_t *buf, uint8_t *src_mac) {
+  Log("arp: in from %s", mactos(src_mac));
   // check package length
   if (buf->len < sizeof(arp_pkt_t)) {
     Log("arp: invalid package length");
@@ -151,6 +152,7 @@ void arp_in(buf_t *buf, uint8_t *src_mac) {
  * @param ip 目标ip地址
  */
 void arp_out(buf_t *buf, uint8_t *ip) {
+  Log("arp: out to %s", iptos(ip));
   // find mac in arp table
   uint8_t *mac = (uint8_t *) map_get(&arp_table, ip);
   if (!mac) {

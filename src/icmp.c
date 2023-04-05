@@ -10,7 +10,7 @@
  * @param src_ip 源ip地址
  */
 static void icmp_resp(buf_t *req_buf, uint8_t *src_ip) {
-  Log("icmp: icmp_resp, req_buf len %zu", req_buf->len);
+  Log("icmp: resp, req_buf len %zu", req_buf->len);
   // init txbuf, icmp reply should copy request data
   // buf_copy(&txbuf, req_buf, 0);
   buf_init(&txbuf, 8);
@@ -33,6 +33,7 @@ static void icmp_resp(buf_t *req_buf, uint8_t *src_ip) {
  * @param src_ip 源ip地址
  */
 void icmp_in(buf_t *buf, uint8_t *src_ip) {
+  Log("icmp: in from %s", iptos(src_ip));
   // check package length
   if (buf->len < sizeof(icmp_hdr_t)) return;
   // if it's an echo request, send an echo reply
@@ -51,6 +52,7 @@ void icmp_in(buf_t *buf, uint8_t *src_ip) {
  * @param code icmp code，协议不可达或端口不可达
  */
 void icmp_unreachable(buf_t *recv_buf, uint8_t *src_ip, icmp_code_t code) {
+  Log("icmp: unreachable, send to %s, code=%d", iptos(src_ip), code);
   buf_init(&txbuf, sizeof(icmp_hdr_t) + sizeof(ip_hdr_t) + 8);
   icmp_hdr_t *p = (icmp_hdr_t *) txbuf.data;
   p->type = ICMP_TYPE_UNREACH;
