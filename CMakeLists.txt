@@ -58,6 +58,7 @@ set(TEST_FIX_SOURCE
     src/net.c
     src/buf.c
     src/map.c
+    src/queue.c
     src/utils.c
     testing/faker/tcp.c
 )

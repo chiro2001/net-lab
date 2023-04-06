@@ -14,6 +14,8 @@ HITsz 2023 spring Computer Networking Lab
 ## TODOs
 
 - [ ] Larger pending buffer for arp
+  - [ ] make pending buffer a `map<queue>`
+- [ ] faster map search: `unordered_map` for C
 - [ ] tcp
 - [ ] http
 - [ ] Test: zero-copy ip fragment
