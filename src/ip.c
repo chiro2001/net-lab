@@ -43,9 +43,9 @@ void ip_in(buf_t *buf, uint8_t *src_mac) {
   // checksum
   uint16_t checksum_expected = p->hdr_checksum16;
   p->hdr_checksum16 = 0;
-  uint16_t checksum_real = checksum16((uint16_t *) buf->data, sizeof(ip_hdr_t));
-  if (checksum_expected != checksum_real) {
-    Log("ip: checksum failed! expected: %x, real: %x", checksum_expected, checksum_real);
+  uint16_t checksum_actual = checksum16((uint16_t *) buf->data, sizeof(ip_hdr_t));
+  if (checksum_expected != checksum_actual) {
+    Log("ip: checksum failed! expected: %x, actual: %x", checksum_expected, checksum_actual);
     return;
   }
   p->hdr_checksum16 = checksum_expected;

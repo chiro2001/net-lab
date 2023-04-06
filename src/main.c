@@ -38,7 +38,7 @@ void tcp_handler(tcp_connect_t *connect, connect_state_t state) {
 #endif
 
 int main(int argc, char const *argv[]) {
-  Log("Computer Network Lab");
+  Log("Computer Networking Lab");
   if (net_init() != 0) {
     printf("net init failed.");
     return -1;

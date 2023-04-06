@@ -1,6 +1,8 @@
+#include <stdbool.h>
 #include "udp.h"
 #include "ip.h"
 #include "icmp.h"
+#include "debug_macros.h"
 
 /**
  * @brief udp处理程序表
@@ -17,7 +19,32 @@ map_t udp_table;
  * @return uint16_t 伪校验和
  */
 static uint16_t udp_checksum(buf_t *buf, uint8_t *src_ip, uint8_t *dst_ip) {
-  // TODO
+  // peso-header area in buf is mutable, must backup-restore it
+  uint8_t backup_ip_header[sizeof(ip_hdr_t)];
+  memcpy(backup_ip_header, buf->data, sizeof(ip_hdr_t));
+  ip_hdr_t *ip_header = (ip_hdr_t *) backup_ip_header;
+  uint16_t udp_length = buf->len;
+  // generate peso-header
+  buf_add_header(buf, sizeof(udp_peso_hdr_t));
+  udp_peso_hdr_t *peso = (udp_peso_hdr_t *) buf->data;
+  memcpy(peso->src_ip, src_ip, NET_IP_LEN);
+  memcpy(peso->dst_ip, dst_ip, NET_IP_LEN);
+  peso->placeholder = 0;
+  peso->protocol = ip_header->protocol;
+  peso->total_len16 = swap16(udp_length);
+  bool has_one_padding = false;
+  if (buf->len & 1) {
+    // odd length, add 1 byte padding
+    buf_add_padding(buf, 1);
+    has_one_padding = true;
+  }
+  // calculate checksum
+  uint16_t checksum = checksum16((uint16_t *) buf->data, buf->len);
+  if (has_one_padding) buf_remove_padding(buf, 1);
+  // restore backup
+  buf_remove_header(buf, sizeof(udp_peso_hdr_t));
+  memcpy(buf->data, backup_ip_header, sizeof(ip_hdr_t));
+  return checksum;
 }
 
 /**
@@ -27,7 +54,31 @@ static uint16_t udp_checksum(buf_t *buf, uint8_t *src_ip, uint8_t *dst_ip) {
  * @param src_ip 源ip地址
  */
 void udp_in(buf_t *buf, uint8_t *src_ip) {
-  // TODO
+  // check package length
+  if (buf->len < sizeof(udp_hdr_t)) {
+    Log("udp: too short package");
+    return;
+  }
+  udp_hdr_t *p = (udp_hdr_t *) buf->data;
+  if (buf->len < p->total_len16) {
+    Log("udp: too short package");
+    return;
+  }
+  uint16_t checksum_expected = p->checksum16;
+  p->checksum16 = 0;
+  uint16_t checksum_actual = udp_checksum(buf, src_ip, net_if_ip);
+  if (checksum_expected != checksum_actual) {
+    Log("udp: checksum error");
+    return;
+  }
+  p->checksum16 = checksum_expected;
+  // check port handler
+  udp_handler_t handler = map_get(&udp_table, &p->dst_port16);
+  if (handler) {
+    handler(buf->data + sizeof(udp_hdr_t), buf->len - sizeof(udp_hdr_t), src_ip, swap16(p->src_port16));
+  } else {
+    Log("udp: no handler for port %d!", swap16(p->dst_port16));
+  }
 }
 
 /**
@@ -39,7 +90,16 @@ void udp_in(buf_t *buf, uint8_t *src_ip) {
  * @param dst_port 目的端口号
  */
 void udp_out(buf_t *buf, uint16_t src_port, uint8_t *dst_ip, uint16_t dst_port) {
-  // TODO
+  // add udp header
+  buf_add_header(buf, sizeof(udp_hdr_t));
+  udp_hdr_t *p = (udp_hdr_t *) buf->data;
+  p->src_port16 = swap16(src_port);
+  p->dst_port16 = swap16(dst_port);
+  p->total_len16 = swap16(buf->len);
+  p->checksum16 = 0;
+  p->checksum16 = udp_checksum(buf, net_if_ip, dst_ip);
+  // send to ip layer
+  ip_out(buf, dst_ip, NET_PROTOCOL_UDP);
 }
 
 /**
