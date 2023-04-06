@@ -187,6 +187,18 @@ add_test(
     COMMAND $<TARGET_FILE:icmp_test> ${CMAKE_CURRENT_LIST_DIR}/testing/data/icmp_test
 )
 
+if(WIN32)
+    add_test(
+        NAME main_test
+        COMMAND $<TARGET_FILE:main>
+    )
+else()
+    add_test(
+        NAME main_test
+        COMMAND sudo $<TARGET_FILE:main>
+    )
+endif()
+
 add_test(NAME queue_test COMMAND $<TARGET_FILE:queue_test>)
 
 message("Executable files is in ${EXECUTABLE_OUTPUT_PATH}.")

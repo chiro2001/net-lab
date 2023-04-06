@@ -20,10 +20,9 @@
         0x11, 0x22, 0x33, 0x44, 0x55, 0x66 \
     } //测试用网卡mac地址
 #else
-// -> pc.chiro.work
 #define NET_IF_IP        \
     {                    \
-        10, 250, 122, 93 \
+        10, 250, 9, 9    \
     } //自定义网卡ip地址
 #define NET_IF_MAC                         \
     {                                      \
