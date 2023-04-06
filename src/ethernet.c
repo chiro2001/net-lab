@@ -13,7 +13,7 @@ void ethernet_in(buf_t *buf) {
   // if is broadcast or is for me, handle it
   if (memcmp(hdr->dst, net_if_mac, NET_MAC_LEN) == 0 ||
       memcmp(hdr->dst, net_broadcast_mac, NET_MAC_LEN) == 0) {
-    Log("ethernet: package for me, dst=%s, src=%s, length/type=%x(%d)", mactos(buf->data),
+    Dbg("ethernet: package for me, dst=%s, src=%s, length/type=%x(%d)", mactos(buf->data),
         mactos(hdr->src), length_type, length_type);
     if (46 <= length_type && length_type <= 1500) {
       // this is a length field

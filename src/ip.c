@@ -13,7 +13,7 @@ static uint16_t ip_id = 0;
  * @param src_mac 源mac地址
  */
 void ip_in(buf_t *buf, uint8_t *src_mac) {
-  Log("ip: in from %s", mactos(src_mac));
+  Dbg("ip: in from %s", mactos(src_mac));
   // check package length
   if (buf->len < sizeof(ip_hdr_t)) {
     Log("ip: package too short");
@@ -50,10 +50,10 @@ void ip_in(buf_t *buf, uint8_t *src_mac) {
   }
   p->hdr_checksum16 = checksum_expected;
   uint16_t total_len = swap16(p->total_len16);
-  Log("ip: before remove padding, len=%zu, total_len16=%d", buf->len, total_len);
+  Dbg("ip: before remove padding, len=%zu, total_len16=%d", buf->len, total_len);
   // removing paddings
   buf_remove_padding(buf, buf->len - total_len);
-  Log("ip: after remove padding, len=%zu", buf->len);
+  Dbg("ip: after remove padding, len=%zu", buf->len);
   // remove ip header
   buf_remove_header(buf, sizeof(ip_hdr_t));
   if (net_in(buf, p->protocol, p->src_ip) < 0) {
