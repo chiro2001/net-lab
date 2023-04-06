@@ -4,6 +4,7 @@
 #include "arp.h"
 #include "ethernet.h"
 #include "debug_macros.h"
+#include "queue.h"
 
 /**
  * @brief 初始的arp包
@@ -25,7 +26,7 @@ static const arp_pkt_t arp_init_pkt = {
 map_t arp_table;
 
 /**
- * @brief arp buffer，<ip,buf_t>的容器
+ * @brief arp buffer，<ip,buf_t>的容器, map_t(queue_t)
  * 
  */
 map_t arp_buf;
@@ -122,12 +123,17 @@ void arp_in(buf_t *buf, uint8_t *src_mac) {
       map_set(&arp_table, p->sender_ip, p->sender_mac);
       arp_print();
       // flush pending buffer
-      buf_t *pending = (buf_t *) map_get(&arp_buf, p->sender_ip);
-      if (pending) {
+      queue_t *pending_queue = (queue_t *) map_get(&arp_buf, p->sender_ip);
+      if (pending_queue) {
         Log("arp in: re-send the pending packet");
-        ethernet_out(pending, p->sender_mac, NET_PROTOCOL_IP);
+        buf_t *queued_buf;
+        while ((queued_buf = queue_pop(pending_queue)) != NULL)
+          ethernet_out(queued_buf, p->sender_mac, NET_PROTOCOL_IP);
         // remove this item in pending buffer
         map_delete(&arp_buf, p->sender_ip);
+        // items in this queue was constructed by malloc, so can free them
+        // but queue struct is map data, cannot free
+        queue_free_data(pending_queue, true);
       }
     } else {
       // handle arp request
@@ -158,17 +164,24 @@ void arp_out(buf_t *buf, uint8_t *ip) {
   if (!mac) {
     arp_print();
     Log("arp: %s not found, see if there is a pending request...", iptos(ip));
-    buf_t *pending = (buf_t *) map_get(&arp_buf, ip);
-    if (pending) {
-      Log("arp: a pending request found, drop this request");
+    queue_t *pending_queue = (queue_t *) map_get(&arp_buf, ip);
+    if (pending_queue) {
+      Log("arp: a pending request queue found, push this request to queue");
+      buf_t *copy = malloc(sizeof(buf_t));
+      buf_copy(copy, buf, 0);
+      queue_push(pending_queue, copy);
     } else {
       Log("arp: %s was added to arp buffer, and a request was sent", iptos(ip));
       // add to pending buffer
-      map_set(&arp_buf, ip, buf);
+      buf_t *copy = malloc(sizeof(buf_t));
+      buf_copy(copy, buf, 0);
+      queue_t *q = queue_new(copy);
+      map_set(&arp_buf, ip, q);
+      // queue indexes was copied to map data, free the queue struct
+      free(q);
       // not found, send a request
       arp_req(ip);
     }
-    // TODO: larger pending buffer
   } else {
     // found, send the packet
     ethernet_out(buf, mac, NET_PROTOCOL_IP);
@@ -181,7 +194,7 @@ void arp_out(buf_t *buf, uint8_t *ip) {
  */
 void arp_init() {
   map_init(&arp_table, NET_IP_LEN, NET_MAC_LEN, 0, ARP_TIMEOUT_SEC, NULL);
-  map_init(&arp_buf, NET_IP_LEN, sizeof(buf_t), 0, ARP_MIN_INTERVAL, buf_copy);
+  map_init(&arp_buf, NET_IP_LEN, sizeof(queue_t), 0, 0, queue_copy);
   net_add_protocol(NET_PROTOCOL_ARP, arp_in);
   // send a gratuitous arp packet
   arp_req(net_if_ip);

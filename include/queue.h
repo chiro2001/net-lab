@@ -22,7 +22,9 @@ typedef struct queue {
 
 queue_t *queue_new(void *item);
 void queue_free(queue_t *q, bool free_items);
+void queue_free_data(queue_t *q, bool free_items);
 void queue_push(queue_t *q, void *item);
 void *queue_pop(queue_t *q);
+void queue_copy(void *dst, const void *src, size_t len);
 
 #endif //NET_QUEUE_H
