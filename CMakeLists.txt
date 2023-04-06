@@ -142,6 +142,19 @@ add_executable(icmp_test
 target_link_libraries(icmp_test ${PCAP})
 target_compile_definitions(icmp_test PUBLIC TEST)
 
+add_executable(queue_test
+        testing/queue_test.c
+        src/udp.c
+        src/net.c
+        src/ethernet.c
+        src/arp.c
+        src/ip.c
+        src/icmp.c
+        ${TEST_FIX_SOURCE}
+        ${EXTRA_FILE})
+target_link_libraries(queue_test ${PCAP})
+target_compile_definitions(queue_test PUBLIC TEST)
+
 enable_testing()
 
 add_test(
@@ -173,6 +186,8 @@ add_test(
     NAME icmp_test
     COMMAND $<TARGET_FILE:icmp_test> ${CMAKE_CURRENT_LIST_DIR}/testing/data/icmp_test
 )
+
+add_test(NAME queue_test COMMAND $<TARGET_FILE:queue_test>)
 
 message("Executable files is in ${EXECUTABLE_OUTPUT_PATH}.")
 

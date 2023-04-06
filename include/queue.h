@@ -5,6 +5,8 @@
 #ifndef NET_QUEUE_H
 #define NET_QUEUE_H
 
+#include <stdbool.h>
+
 struct queue_node {
   void *item;
   // pointer to next node

@@ -4,7 +4,6 @@
 
 #include <string.h>
 #include <malloc.h>
-#include <stdbool.h>
 #include "queue.h"
 #include "debug_macros.h"
 
@@ -57,8 +56,8 @@ void queue_push(queue_t *q, void *item) {
   queue_node_t *node = malloc(sizeof(queue_node_t));
   memset(node, 0, sizeof(queue_node_t));
   node->item = item;
-  q->tail->next = item;
-  q->tail = item;
+  q->tail->next = node;
+  q->tail = node;
 }
 
 /**
