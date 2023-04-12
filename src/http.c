@@ -69,7 +69,7 @@ static size_t http_send(tcp_connect_t *tcp, const char *buf, size_t size) {
   while (send < size) {
     send += tcp_connect_write(tcp, (const uint8_t *) buf + send, size - send);
     net_poll();
-    Log("http: write %zu, target size=%zu", send, size);
+    Dbg("http: write %zu, target size=%zu", send, size);
   }
   return send;
 }
@@ -95,7 +95,7 @@ static bool send_local_file(tcp_connect_t *tcp, FILE *f, const char *content_typ
     Err("http: Not Found!");
     return false;
   }
-  char tx_buffer[10240];
+  char tx_buffer[1024];
   fseek(f, 0, SEEK_END);
   size_t filesize = ftell(f);
   fseek(f, 0, SEEK_SET);
@@ -111,7 +111,7 @@ static bool send_local_file(tcp_connect_t *tcp, FILE *f, const char *content_typ
     // sz = fread(tx_buffer + len, 1, sizeof(tx_buffer) - len, f);
     // if (sz) http_send(tcp, tx_buffer, sz + len);
     sz = fread(tx_buffer, 1, sizeof(tx_buffer), f);
-    Log("http: read static file for %zu bytes", sz);
+    Dbg("http: read static file for %zu bytes", sz);
     if (sz) http_send(tcp, tx_buffer, sz);
   } while (sz);
   return true;
@@ -159,13 +159,13 @@ static void send_file(tcp_connect_t *tcp, const char *url) {
     if (*url == '/') sprintf(file_path, "%s/%s", static_path, url + 1);
     else sprintf(file_path, "%s/%s", static_path, url);
   }
-  Log("http: static file %s", file_path);
   FILE *f = fopen(file_path, "rb");
   if (str_endswith(file_path, ".jpg")) {
     content_type = "image/jpeg";
   } else if (str_endswith(file_path, ".css")) {
     content_type = "text/css";
   }
+  Log("http: static file %s, content_type %s", file_path, content_type);
   if (!send_local_file(tcp, f, content_type)) {
     http_send(tcp, content_404, sizeof(content_404));
   }
@@ -209,7 +209,7 @@ void http_server_run(void) {
       close_http(tcp);
       continue;
     }
-    Log("http: first line %s", rx_buffer);
+    Dbg("http: first line %s", rx_buffer);
 
     /*
     2、检查是否有GET请求，如果没有，则调用close_http关闭tcp，并继续循环
@@ -230,7 +230,7 @@ void http_server_run(void) {
     char *path = p;
     while (*p && *p != ' ') p++;
     *p = '\0';
-    Log("http: got path %s", path);
+    Dbg("http: got path %s", path);
     send_file(tcp, path);
 
     /*
