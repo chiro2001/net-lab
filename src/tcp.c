@@ -117,7 +117,8 @@ static uint16_t tcp_checksum(buf_t *buf, uint8_t *src_ip, uint8_t *dst_ip) {
   return checksum;
 }
 
-static _Thread_local uint16_t delete_port;
+// static _Thread_local uint16_t delete_port;
+static uint16_t delete_port;
 
 /**
  * @brief tcp_close使用这个函数来查找可以关闭的连接，使用thread-local变量delete_port传递端口号。

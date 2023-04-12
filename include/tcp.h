@@ -16,7 +16,7 @@ typedef struct tcp_flags {
   uint8_t cwr: 1;    // congestion window reduced
 } tcp_flags_t;
 
-static const tcp_flags_t tcp_flags_null = {};
+static const tcp_flags_t tcp_flags_null = {.ack = 0};
 static const tcp_flags_t tcp_flags_ack = {.ack = 1};
 static const tcp_flags_t tcp_flags_ack_syn = {.ack = 1, .syn = 1};
 static const tcp_flags_t tcp_flags_ack_fin = {.ack = 1, .fin = 1};

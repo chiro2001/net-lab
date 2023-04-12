@@ -60,7 +60,7 @@ FILE *open_file(char *path, char *name, char *mode) {
   return fopen(filename, mode);
 }
 
-ssize_t getline(char **lineptr, size_t *n, FILE *fp) {
+int getline(char **lineptr, size_t *n, FILE *fp) {
   int i;
   if (*lineptr == NULL || *n < 256) {
     *lineptr = (char *) realloc(*lineptr, 256);
@@ -72,7 +72,7 @@ ssize_t getline(char **lineptr, size_t *n, FILE *fp) {
   }
   char *buf = *lineptr;
   size_t size = *n;
-  for (i = 0; i < size; i++) {
+  for (i = 0; i < (int) size; i++) {
     int c = fgetc(fp);
     if (c == EOF) {
       buf[i] = 0;
@@ -82,7 +82,7 @@ ssize_t getline(char **lineptr, size_t *n, FILE *fp) {
       i--;
       continue;
     }
-    if (i >= size - 1) {
+    if (i >= (int) (size - 1)) {
       size *= 2;
       buf = realloc(buf, size);
       if (buf == NULL) {
@@ -92,7 +92,7 @@ ssize_t getline(char **lineptr, size_t *n, FILE *fp) {
       *lineptr = buf;
       *n = size;
     }
-    buf[i] = c;
+    buf[i] = (char) c;
     if (c == '\n') {
       buf[i + 1] = 0;
       return i + 1;
@@ -126,7 +126,7 @@ void fprint_buf(FILE *f, buf_t *buf) {
   if (buf == 0) {
     fprintf(f, "(null)\n");
   } else {
-    for (int i = 0; i < buf->len; i++) {
+    for (size_t i = 0; i < buf->len; i++) {
       fprintf(f, " %02x", buf->data[i]);
     }
     fprintf(f, "\n");
@@ -163,7 +163,7 @@ void log_tab_buf() {
       do {
         fprintf(arp_log_f, "%s -> ", print_ip(entry));
         buf_t *buf = (buf_t *) node->item;
-        for (int j = 0; j < buf->len; j++) {
+        for (size_t j = 0; j < buf->len; j++) {
           fprintf(arp_log_f, " %02x", buf->data[j]);
         }
         fputc('\n', arp_log_f);

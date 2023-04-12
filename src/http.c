@@ -117,7 +117,7 @@ static bool send_local_file(tcp_connect_t *tcp, FILE *f, const char *content_typ
 static void send_file(tcp_connect_t *tcp, const char *url) {
   // FILE *file;
   // uint32_t size;
-  const char *static_path = "../htmldocs";
+  const char *static_path = XHTTP_DOC_DIR;
   char file_path[255];
   const char content_404[] = "HTTP/1.1 404 NOT FOUND\n"
                              "Content-Type: text/html\n"
