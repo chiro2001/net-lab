@@ -32,12 +32,18 @@ void tcp_handler(tcp_connect_t *connect, connect_state_t state) {
   printf("recv tcp packet from %s:%u len=%zu\n",
          iptos(connect->ip), connect->remote_port, len);
   printf("%s\n", buf);
-  tcp_connect_write(connect, buf, len);
+  if (len) tcp_connect_write(connect, buf, len);
+  else {
+    const char start_msg[] = "hi there!";
+    Log("tcp handler: sending msg %s", start_msg);
+    tcp_connect_write(connect, (uint8_t *) start_msg, sizeof(start_msg));
+  }
 }
 
 #endif
 
 int main(int argc, char const *argv[]) {
+  srand(0x55aa);
   Log("Computer Networking Lab");
   if (net_init() != 0) {
     Err("net init failed.");
