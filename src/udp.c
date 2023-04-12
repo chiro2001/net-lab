@@ -63,11 +63,14 @@ void udp_in(buf_t *buf, uint8_t *src_ip) {
   udp_hdr_t *p = (udp_hdr_t *) buf->data;
   uint16_t total_len = swap16(p->total_len16);
   if (buf->len < total_len) {
-    Log("udp: too short package! len(%zu) < total_len(%d)", buf->len, p->total_len16);
+    Log("udp: too short package! len(%zu) < total_len(%d)", buf->len, total_len);
     return;
   }
-  if (p->dst_port16 != constswap16(60000)) return;
-  else {
+  uint16_t port = swap16(p->dst_port16);
+  if (port != 60000) {
+    Dbg("udp: ignored port %d", port);
+    return;
+  } else {
     Log("udp: recv target port package");
   }
   uint16_t checksum_expected = p->checksum16;
@@ -83,7 +86,6 @@ void udp_in(buf_t *buf, uint8_t *src_ip) {
     p->checksum16 = checksum_expected;
   }
   // check port handler
-  uint16_t port = swap16(p->dst_port16);
   udp_handler_t handler = map_get(&udp_table, &port);
   if (handler) {
     Log("udp: successfully call handler for port %d", port);

@@ -47,9 +47,9 @@ void arp_entry_print(void *ip, void *mac, time_t *timestamp) {
  * 
  */
 void arp_print() {
-  Log("===ARP TABLE BEGIN===\n");
+  Log("===ARP TABLE BEGIN===");
   map_foreach(&arp_table, arp_entry_print);
-  Log("===ARP TABLE  END ===\n");
+  Log("===ARP TABLE  END ===");
 }
 
 /**
