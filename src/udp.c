@@ -66,9 +66,9 @@ void udp_in(buf_t *buf, uint8_t *src_ip) {
     Log("udp: too short package! len(%zu) < total_len(%d)", buf->len, total_len);
     return;
   }
-  uint16_t port = swap16(p->dst_port16);
-  if (port != 60000) {
-    Dbg("udp: ignored port %d", port);
+  uint16_t dst_port = swap16(p->dst_port16);
+  if (dst_port != 60000) {
+    Dbg("udp: ignored port %d", dst_port);
     return;
   } else {
     Log("udp: recv target port package");
@@ -86,10 +86,10 @@ void udp_in(buf_t *buf, uint8_t *src_ip) {
     p->checksum16 = checksum_expected;
   }
   // check port handler
-  udp_handler_t handler = map_get(&udp_table, &port);
+  udp_handler_t *handler = (udp_handler_t *) map_get(&udp_table, &dst_port);
   if (handler) {
-    Log("udp: successfully call handler for port %d", port);
-    handler(buf->data + sizeof(udp_hdr_t), buf->len - sizeof(udp_hdr_t), src_ip, swap16(p->src_port16));
+    Log("udp: successfully call handler for port %d: %p", dst_port, handler);
+    (*handler)(buf->data + sizeof(udp_hdr_t), buf->len - sizeof(udp_hdr_t), src_ip, swap16(p->src_port16));
   } else {
     Log("udp: no handler for port %d!", swap16(p->dst_port16));
   }
@@ -121,6 +121,7 @@ void udp_out(buf_t *buf, uint16_t src_port, uint8_t *dst_ip, uint16_t dst_port) 
  * 
  */
 void udp_init() {
+  Assert(sizeof(udp_handler_t) == sizeof(void *), "udp_handler_t size err: %llu", sizeof(udp_handler_t));
   map_init(&udp_table, sizeof(uint16_t), sizeof(udp_handler_t), 0, 0, NULL);
   net_add_protocol(NET_PROTOCOL_UDP, udp_in);
 }
@@ -133,6 +134,7 @@ void udp_init() {
  * @return int 成功为0，失败为-1
  */
 int udp_open(uint16_t port, udp_handler_t handler) {
+  Log("udp: add handler for port %d: %p", port, handler);
   return map_set(&udp_table, &port, &handler);
 }
 
