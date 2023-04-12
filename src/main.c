@@ -65,8 +65,10 @@ int main(int argc, char const *argv[]) {
     http_server_run();
 #endif
     // 节约用电
+#ifndef _MSC_VER
     struct timespec sleepTime = {0, 1000000};
     nanosleep(&sleepTime, NULL);
+#endif
   }
 
   return 0;
