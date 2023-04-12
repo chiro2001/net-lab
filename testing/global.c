@@ -60,7 +60,11 @@ FILE *open_file(char *path, char *name, char *mode) {
   return fopen(filename, mode);
 }
 
+#ifdef _MSC_VER
 int getline(char **lineptr, size_t *n, FILE *fp) {
+#else
+ssize_t getline(char **lineptr, size_t *n, FILE *fp) {
+#endif
   int i;
   if (*lineptr == NULL || *n < 256) {
     *lineptr = (char *) realloc(*lineptr, 256);
