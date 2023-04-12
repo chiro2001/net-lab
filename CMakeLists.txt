@@ -25,7 +25,7 @@ include(${CPM_DOWNLOAD_LOCATION})
 
 CPMAddPackage(
         NAME debug_macros
-        VERSION 1.04
+        VERSION 1.05
         GITHUB_REPOSITORY chiro2001/debug-macros)
 
 link_libraries(debug_macros)

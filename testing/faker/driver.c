@@ -3,6 +3,7 @@
 #include <utils.h>
 #include "config.h"
 #include "buf.h"
+#include "debug_macros.h"
 
 static pcap_t *pcap;
 static pcap_dumper_t *pdump;
@@ -12,45 +13,44 @@ extern FILE *pcap_out;
 extern FILE *control_flow;
 
 #ifdef _WIN32
+
 #include <tchar.h>
-BOOL LoadNpcapDlls()
-{
-    _TCHAR npcap_dir[512];
-    UINT len;
-    len = GetSystemDirectory(npcap_dir, 480);
-    if (!len)
-    {
-        fprintf(stderr, "Error in GetSystemDirectory: %lx", GetLastError());
-        return FALSE;
-    }
-    _tcscat_s(npcap_dir, 512, _T("\\Npcap"));
-    if (SetDllDirectory(npcap_dir) == 0)
-    {
-        fprintf(stderr, "Error in SetDllDirectory: %lx", GetLastError());
-        return FALSE;
-    }
-    return TRUE;
+
+BOOL LoadNpcapDlls() {
+  _TCHAR npcap_dir[512];
+  UINT len;
+  len = GetSystemDirectory(npcap_dir, 480);
+  if (!len) {
+    fprintf(stderr, "Error in GetSystemDirectory: %lx", GetLastError());
+    return FALSE;
+  }
+  _tcscat_s(npcap_dir, 512, _T("\\Npcap"));
+  if (SetDllDirectory(npcap_dir) == 0) {
+    fprintf(stderr, "Error in SetDllDirectory: %lx", GetLastError());
+    return FALSE;
+  }
+  return TRUE;
 }
+
 #endif
 
 int driver_open() {
 #ifdef _WIN32
   /* Load Npcap and its functions. */
-  if (!LoadNpcapDlls())
-  {
-          fprintf(stderr, "Couldn't load Npcap\n");
-          return -1;
+  if (!LoadNpcapDlls()) {
+    Err("Couldn't load Npcap");
+    return -1;
   }
 #endif
   pcap = pcap_fopen_offline(pcap_in, pcap_errbuf);
   if (pcap == NULL) {
-    fprintf(stderr, "pcap_open_offline() failed:%s\n", pcap_errbuf);
+    Err("pcap_open_offline() failed:%s", pcap_errbuf);
     return -1;
   }
 
   pdump = pcap_dump_fopen(pcap, pcap_out);
   if (pdump == NULL) {
-    fprintf(stderr, "pcap_dump_fopen() failed:%s\n", pcap_geterr(pcap));
+    Err("pcap_dump_fopen() failed:%s", pcap_geterr(pcap));
     return -1;
   }
 
@@ -70,7 +70,7 @@ int driver_recv(buf_t *buf) {
     memcpy(buf->data, pkt_data, pkt_hdr->len);
     return pkt_hdr->len;
   } else {
-    fprintf(stderr, "Error in driver_recv: %s\n", pcap_geterr(pcap));
+    Err("Error in driver_recv: %s", pcap_geterr(pcap));
     return -1;
   }
 }

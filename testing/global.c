@@ -7,6 +7,7 @@
 #include "arp.h"
 #include "utils.h"
 #include "queue.h"
+#include "debug_macros.h"
 
 FILE *control_flow;
 
@@ -227,51 +228,48 @@ int check_log() {
   int i = 0;
   int ret;
   int result = 0;
-  printf("\e[0;34mChecking log file(compare with demo).\n");
+  Log("Checking log file(compare with demo).");
   while (get_round(demo_log) == 0) {
     i++;
     if (get_round(out_log)) {
-      printf("\e[0;31mMissing Round %d\n", i);
+      Log("Missing Round %d", i);
       result = 1;
       continue;
     }
     if ((ret = check_round())) {
-      printf("\e[0;31mRound %d: differences found(Line %d of the current round)\n", i, ret);
+      Log("Round %d: differences found(Line %d of the current round)", i, ret);
       result = 1;
     } else {
-      printf("\e[0;32mRound %d: no differences\n", i);
+      Log("Round %d: no differences", i);
     }
   }
 
   while (get_round(out_log) == 0) {
     i++;
     result = 1;
-    printf("\e[0;31mAdditional Round %d found\n", i);
+    Log("Additional Round %d found", i);
   }
 
   if (result) {
-    printf("\e[1;31m====> Some log rounds are different to the demo.\n");
+    Err("====> Some log rounds are different to the demo.");
   } else {
-    printf("\e[1;32m====> All log rounds are the same to the demo.\n");
+    Ok("====> All log rounds are the same to the demo.");
   }
-  printf("\e[0m");
   return result;
 }
 
 int check_pcap() {
   char errbuf[PCAP_ERRBUF_SIZE];
   const char *str_exit = "Exiting pcap file check\n";
-  printf("\e[0;34mChecking pcap output file(compare with demo).\n");
+  Log("Checking pcap output file(compare with demo).");
   pcap_t *pcap0 = pcap_fopen_offline(pcap_demo, errbuf);
   if (pcap0 == 0) {
-    fprintf(stderr, "\e[1;31mLoad demo output failed:%s\n", errbuf);
-    printf("%s", str_exit);
+    Err("Load demo output failed: %s, %s", errbuf, str_exit);
     return -1;
   }
   pcap_t *pcap1 = pcap_fopen_offline(pcap_out, errbuf);
   if (pcap1 == 0) {
-    fprintf(stderr, "\e[1;31mLoad demo output failed:%s\n", errbuf);
-    printf("%s", str_exit);
+    Err("Load demo output failed: %s, %s", errbuf, str_exit);
     return -1;
   }
 
@@ -286,32 +284,29 @@ int check_pcap() {
   int ret1 = pcap_next_ex(pcap1, &pkt_hdr1, &pkt_data1);
 
   if (ret0 == -1) {
-    fprintf(stderr, "\e[1;31mError occured on loading packet %d from demo:%s\n", idx, pcap_geterr(pcap0));
-    printf("%s", str_exit);
+    Err("Error occured on loading packet %d from demo: %s, %s", idx, pcap_geterr(pcap0), str_exit);
     goto CHECK_PCAP_EXIT;
   }
 
   if (ret1 == -1) {
-    fprintf(stderr, "\e[1;31mError occured on loading packet %d from user output:%s\n", idx, pcap_geterr(pcap1));
-    printf("%s", str_exit);
+    Err("Error occured on loading packet %d from user output: %s, %s", idx, pcap_geterr(pcap1), str_exit);
     goto CHECK_PCAP_EXIT;
   }
 
   if (ret0 == PCAP_ERROR_BREAK) {
     if (ret1 == 1) {
-      fprintf(stderr, "\e[0;31mAddition packet %d found\n", idx);
+      Err("Addition packet %d found", idx);
       result = 1;
       goto CHECK_PCAP_NEXT_PACKET;
     } else if (ret1 == PCAP_ERROR_BREAK) {
       if (result) {
-        printf("\e[1;31m====> Some packets are different to the demo.\n");
+        Err("====> Some packets are different to the demo.");
       } else {
-        printf("\e[1;32m====> All packets are the same to the demo.\n");
+        Ok("====> All packets are the same to the demo.");
       }
       goto CHECK_PCAP_EXIT;
     } else {
-      printf("\e[1;31mUNKNOWN ERROR\n");
-      printf("%s", str_exit);
+      Err("UNKNOWN ERROR: %s", str_exit);
       result = 1;
       goto CHECK_PCAP_EXIT;
     }
@@ -319,33 +314,31 @@ int check_pcap() {
 
   if (ret1 == PCAP_ERROR_BREAK) {
     if (ret0 != 1) {
-      printf("\e[1;31mUNKNOWN ERROR\n");
-      printf("%s", str_exit);
+      Err("UNKNOWN ERROR: %s", str_exit);
       result = 1;
       goto CHECK_PCAP_EXIT;
     } else {
-      printf("\e[0;31mMissing packet %d\n", idx);
+      Err("Missing packet %d", idx);
       result = 1;
       goto CHECK_PCAP_NEXT_PACKET;
     }
   }
 
   if (pkt_hdr0->len != pkt_hdr1->len) {
-    printf("\e[0;31mPacket %d: differences found\n", idx);
+    Log("Packet %d: differences found", idx);
     result = 1;
     goto CHECK_PCAP_NEXT_PACKET;
   }
 
   if (memcmp(pkt_data0, pkt_data1, pkt_hdr0->len)) {
-    printf("\e[0;31mPacket %d: differences found\n", idx);
+    Log("Packet %d: differences found", idx);
     result = 1;
     goto CHECK_PCAP_NEXT_PACKET;
   }
-  printf("\e[0;32mPacket %d: no differences\n", idx);
+  Log("Packet %d: no differences", idx);
   goto CHECK_PCAP_NEXT_PACKET;
   CHECK_PCAP_EXIT:
   pcap_close(pcap0);
   pcap_close(pcap1);
-  printf("\e[0m");
   return result;
 }

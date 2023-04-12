@@ -1,4 +1,5 @@
 #include "buf.h"
+#include "debug_macros.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -16,7 +17,7 @@
  */
 int buf_init(buf_t *buf, size_t len) {
   if (len >= BUF_MAX_LEN / 2) {
-    fprintf(stderr, "Error in buf_init:%zu\n", len);
+    Err("Error in buf_init:%zu", len);
     return -1;
   }
 
@@ -34,7 +35,7 @@ int buf_init(buf_t *buf, size_t len) {
  */
 int buf_add_header(buf_t *buf, size_t len) {
   if (buf->data - len < buf->payload) {
-    fprintf(stderr, "Error in buf_add_header:%zu+%zu\n", buf->len, len);
+    Err("Error in buf_add_header:%zu+%zu", buf->len, len);
     return -1;
   }
   buf->len += len;
@@ -51,7 +52,7 @@ int buf_add_header(buf_t *buf, size_t len) {
  */
 int buf_remove_header(buf_t *buf, size_t len) {
   if (buf->len < len) {
-    fprintf(stderr, "Error in buf_remove_header:%zu-%zu\n", buf->len, len);
+    Err("Error in buf_remove_header:%zu-%zu", buf->len, len);
     return -1;
   }
   buf->len -= len;
@@ -68,7 +69,7 @@ int buf_remove_header(buf_t *buf, size_t len) {
  */
 int buf_add_padding(buf_t *buf, size_t len) {
   if (buf->data + buf->len + len >= buf->payload + BUF_MAX_LEN) {
-    fprintf(stderr, "Error in buf_add_padding:%zu+%zu\n", buf->len, len);
+    Err("Error in buf_add_padding:%zu+%zu", buf->len, len);
     return -1;
   }
   memset(buf->data + buf->len, 0, len);
@@ -85,7 +86,7 @@ int buf_add_padding(buf_t *buf, size_t len) {
  */
 int buf_remove_padding(buf_t *buf, size_t len) {
   if (buf->len < len) {
-    fprintf(stderr, "Error in buf_remove_padding:%zu-%zu\n", buf->len, len);
+    Err("Error in buf_remove_padding:%zu-%zu", buf->len, len);
     return -1;
   }
   buf->len -= len;

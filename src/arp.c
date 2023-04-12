@@ -39,7 +39,7 @@ map_t arp_buf;
  * @param timestamp 表项的更新时间
  */
 void arp_entry_print(void *ip, void *mac, time_t *timestamp) {
-  printf("%s | %s | %s\n", iptos(ip), mactos(mac), timetos(*timestamp));
+  Log("%s | %s | %s", iptos(ip), mactos(mac), timetos(*timestamp));
 }
 
 /**
@@ -47,9 +47,9 @@ void arp_entry_print(void *ip, void *mac, time_t *timestamp) {
  * 
  */
 void arp_print() {
-  printf("===ARP TABLE BEGIN===\n");
+  Log("===ARP TABLE BEGIN===\n");
   map_foreach(&arp_table, arp_entry_print);
-  printf("===ARP TABLE  END ===\n");
+  Log("===ARP TABLE  END ===\n");
 }
 
 /**

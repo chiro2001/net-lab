@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include "debug_macros.h"
 
 #include "net.h"
 #include "ip.h"
@@ -30,7 +31,7 @@ int main(int argc, char *argv[]) {
     p++;
     buf.len++;
   }
-  printf("\e[0;34mFeeding input.\n");
+  Log("Feeding input.");
   ip_out(&buf, net_if_ip, NET_PROTOCOL_TCP);
 
   fclose(in);
@@ -42,16 +43,16 @@ int main(int argc, char *argv[]) {
   int column = 0;
   int diff = 0;
   char c1, c2;
-  printf("\e[0;34mComparing logs.\n");
+  Log("Comparing logs.");
   while (fread(&c1, 1, 1, demo)) {
     column++;
     if (fread(&c2, 1, 1, log) <= 0) {
-      printf("\e[0;31mLog file shorter than expected.\n");
+      Log("Log file shorter than expected.");
       diff = 1;
       break;
     }
     if (c1 != c2) {
-      printf("\e[0;31mDifferent char found at line %d column %d.\n", line, column);
+      Log("Different char found at line %d column %d.", line, column);
       diff = 1;
       break;
     }
@@ -61,15 +62,14 @@ int main(int argc, char *argv[]) {
     }
   }
   if (diff == 0 && fread(&c2, 1, 1, log) == 1) {
-    printf("\e[0;31mLog file longer than expected.\n");
+    Log("Log file longer than expected.");
     diff = 1;
   }
   if (diff == 0) {
-    printf("\e[1;32mLog file check passed\n");
+    Ok("Log file check passed\n");
   }
   fclose(log);
   fclose(demo);
-  printf("\e[0m");
   return diff ? -1 : 0;
 }
 

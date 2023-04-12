@@ -21,7 +21,7 @@ map_t udp_table;
 static uint16_t udp_checksum(buf_t *buf, uint8_t *src_ip, uint8_t *dst_ip) {
   // peso-header area in buf is mutable, must backup-restore it
   uint8_t backup_ip_header[sizeof(ip_hdr_t)];
-  memcpy(backup_ip_header, buf->data, sizeof(ip_hdr_t));
+  memcpy(backup_ip_header, buf->data - sizeof(ip_hdr_t), sizeof(ip_hdr_t));
   ip_hdr_t *ip_header = (ip_hdr_t *) backup_ip_header;
   uint16_t udp_length = buf->len;
   // generate peso-header
@@ -34,8 +34,9 @@ static uint16_t udp_checksum(buf_t *buf, uint8_t *src_ip, uint8_t *dst_ip) {
   peso->total_len16 = swap16(udp_length);
   bool has_one_padding = false;
   if (buf->len & 1) {
-    // odd length, add 1 byte padding
-    buf_add_padding(buf, 1);
+    Log("udp: checksum, data odd length (%zu), add 1 byte padding",
+        buf->len - sizeof(udp_peso_hdr_t) - sizeof(udp_hdr_t));
+    Assert(buf_add_padding(buf, 1) == 0, "Cannot add buf padding");
     has_one_padding = true;
   }
   // calculate checksum
@@ -43,7 +44,7 @@ static uint16_t udp_checksum(buf_t *buf, uint8_t *src_ip, uint8_t *dst_ip) {
   if (has_one_padding) buf_remove_padding(buf, 1);
   // restore backup
   buf_remove_header(buf, sizeof(udp_peso_hdr_t));
-  memcpy(buf->data, backup_ip_header, sizeof(ip_hdr_t));
+  memcpy(buf->data - sizeof(ip_hdr_t), backup_ip_header, sizeof(ip_hdr_t));
   return checksum;
 }
 
@@ -56,25 +57,36 @@ static uint16_t udp_checksum(buf_t *buf, uint8_t *src_ip, uint8_t *dst_ip) {
 void udp_in(buf_t *buf, uint8_t *src_ip) {
   // check package length
   if (buf->len < sizeof(udp_hdr_t)) {
-    Log("udp: too short package");
+    Log("udp: too short package! len(%zu) < udp_header_size(%llu)", buf->len, sizeof(udp_hdr_t));
     return;
   }
   udp_hdr_t *p = (udp_hdr_t *) buf->data;
-  if (buf->len < p->total_len16) {
-    Log("udp: too short package");
+  uint16_t total_len = swap16(p->total_len16);
+  if (buf->len < total_len) {
+    Log("udp: too short package! len(%zu) < total_len(%d)", buf->len, p->total_len16);
     return;
+  }
+  if (p->dst_port16 != constswap16(60000)) return;
+  else {
+    Log("udp: recv target port package");
   }
   uint16_t checksum_expected = p->checksum16;
-  p->checksum16 = 0;
-  uint16_t checksum_actual = udp_checksum(buf, src_ip, net_if_ip);
-  if (checksum_expected != checksum_actual) {
-    Log("udp: checksum error");
-    return;
+  if (checksum_expected == 0) {
+    Log("udp: ignore checksum");
+  } else {
+    p->checksum16 = 0;
+    uint16_t checksum_actual = udp_checksum(buf, src_ip, net_if_ip);
+    if (checksum_expected != checksum_actual) {
+      Log("udp: checksum error! expected=%x, actual=%x", checksum_expected, checksum_actual);
+      return;
+    }
+    p->checksum16 = checksum_expected;
   }
-  p->checksum16 = checksum_expected;
   // check port handler
-  udp_handler_t handler = map_get(&udp_table, &p->dst_port16);
+  uint16_t port = swap16(p->dst_port16);
+  udp_handler_t handler = map_get(&udp_table, &port);
   if (handler) {
+    Log("udp: successfully call handler for port %d", port);
     handler(buf->data + sizeof(udp_hdr_t), buf->len - sizeof(udp_hdr_t), src_ip, swap16(p->src_port16));
   } else {
     Log("udp: no handler for port %d!", swap16(p->dst_port16));

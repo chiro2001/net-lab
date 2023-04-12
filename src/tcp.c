@@ -1,23 +1,23 @@
-#include <assert.h>
 #include "map.h"
 #include "tcp.h"
 #include "ip.h"
+#include "debug_macros.h"
 
-static void panic(const char *msg, int line) {
-  printf("panic %s! at line %d\n", msg, line);
-  assert(0);
-}
+// static void panic(const char *msg, int line) {
+//   printf("panic %s! at line %d\n", msg, line);
+//   assert(0);
+// }
 
 static void display_flags(tcp_flags_t flags) {
-  printf("flags:%s%s%s%s%s%s%s%s\n",
-         flags.cwr ? " cwr" : "",
-         flags.ece ? " ece" : "",
-         flags.urg ? " urg" : "",
-         flags.ack ? " ack" : "",
-         flags.psh ? " psh" : "",
-         flags.rst ? " rst" : "",
-         flags.syn ? " syn" : "",
-         flags.fin ? " fin" : ""
+  Log("flags:%s%s%s%s%s%s%s%s",
+      flags.cwr ? " cwr" : "",
+      flags.ece ? " ece" : "",
+      flags.urg ? " urg" : "",
+      flags.ack ? " ack" : "",
+      flags.psh ? " psh" : "",
+      flags.rst ? " rst" : "",
+      flags.syn ? " syn" : "",
+      flags.fin ? " fin" : ""
   );
 }
 
@@ -67,7 +67,7 @@ void tcp_init() {
  * @return int
  */
 int tcp_open(uint16_t port, tcp_handler_t handler) {
-  printf("tcp open\n");
+  Log("tcp: open at port %d", port);
   return map_set(&tcp_table, &port, &handler);
 }
 

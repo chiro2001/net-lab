@@ -2,6 +2,7 @@
 #include "tcp.h"
 #include "net.h"
 #include "assert.h"
+#include "debug_macros.h"
 
 #define TCP_FIFO_SIZE 40
 
@@ -74,7 +75,7 @@ static size_t http_send(tcp_connect_t *tcp, const char *buf, size_t size) {
 
 static void close_http(tcp_connect_t *tcp) {
   tcp_connect_close(tcp);
-  printf("http closed.\n");
+  Log("http closed.");
 }
 
 
@@ -100,10 +101,10 @@ static void send_file(tcp_connect_t *tcp, const char *url) {
 static void http_handler(tcp_connect_t *tcp, connect_state_t state) {
   if (state == TCP_CONN_CONNECTED) {
     http_fifo_in(&http_fifo_v, tcp);
-    printf("http conntected.\n");
+    Ok("http conntected.");
   } else if (state == TCP_CONN_DATA_RECV) {
   } else if (state == TCP_CONN_CLOSED) {
-    printf("http closed.\n");
+    Log("http closed.");
   } else {
     assert(0);
   }
@@ -160,6 +161,6 @@ void http_server_run(void) {
     // TODO
 
 
-    printf("!! final close\n");
+    Log("!! final close\n");
   }
 }
