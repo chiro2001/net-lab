@@ -69,6 +69,7 @@ static size_t http_send(tcp_connect_t *tcp, const char *buf, size_t size) {
   while (send < size) {
     send += tcp_connect_write(tcp, (const uint8_t *) buf + send, size - send);
     net_poll();
+    Log("http: write %zu, target size=%zu", send, size);
   }
   return send;
 }
@@ -105,10 +106,12 @@ static bool send_local_file(tcp_connect_t *tcp, FILE *f, const char *content_typ
   size_t len = strlen(tx_buffer);
   Assert(http_send(tcp, tx_buffer, len) == len, "Cannot write http headers!");
   size_t sz;
+  Log("http: header size %zu, file size %zu", len, filesize);
   do {
     // sz = fread(tx_buffer + len, 1, sizeof(tx_buffer) - len, f);
     // if (sz) http_send(tcp, tx_buffer, sz + len);
     sz = fread(tx_buffer, 1, sizeof(tx_buffer), f);
+    Log("http: read static file for %zu bytes", sz);
     if (sz) http_send(tcp, tx_buffer, sz);
   } while (sz);
   return true;
@@ -157,7 +160,7 @@ static void send_file(tcp_connect_t *tcp, const char *url) {
     else sprintf(file_path, "%s/%s", static_path, url);
   }
   Log("http: static file %s", file_path);
-  FILE *f = fopen(file_path, "r");
+  FILE *f = fopen(file_path, "rb");
   if (str_endswith(file_path, ".jpg")) {
     content_type = "image/jpeg";
   } else if (str_endswith(file_path, ".css")) {
