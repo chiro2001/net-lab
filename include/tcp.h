@@ -21,6 +21,17 @@ static const tcp_flags_t tcp_flags_ack = {.ack = 1};
 static const tcp_flags_t tcp_flags_ack_syn = {.ack = 1, .syn = 1};
 static const tcp_flags_t tcp_flags_ack_fin = {.ack = 1, .fin = 1};
 static const tcp_flags_t tcp_flags_ack_rst = {.ack = 1, .rst = 1};
+// used only to check
+static const tcp_flags_t tcp_flags_rst = {.rst = 1};
+static const tcp_flags_t tcp_flags_syn = {.rst = 1};
+
+static uint8_t tcp_flags_and(tcp_flags_t flags, tcp_flags_t ref) {
+  return (*(uint8_t *) &flags) & (*(uint8_t *) &ref);
+}
+
+// static uint8_t tcp_flags_not(tcp_flags_t flags, tcp_flags_t ref) {
+//   return (*(uint8_t *) &flags) & (~(*(uint8_t *) &ref));
+// }
 
 typedef struct tcp_hdr {
   uint16_t src_port16;
@@ -68,22 +79,7 @@ typedef struct tcp_key {
   uint16_t dst_port;
 } tcp_key_t;
 
-typedef struct tcp_connect {
-  tcp_state_t state;
-  uint16_t local_port, remote_port;
-  uint8_t ip[NET_IP_LEN];
-  uint32_t unack_seq, next_seq; // tx_buf中前[next_seq - unack_seq]字节已经发送，unack_seq未确认的起始序号，next_seq下一发送序号
-  uint32_t ack;
-  uint16_t remote_mss;
-  uint16_t remote_win;
-  void *handler;
-  buf_t *rx_buf; // 接收缓存
-  buf_t *tx_buf; // 发送缓存
-} tcp_connect_t;
-
-static const tcp_connect_t CONNECT_LISTEN = {
-    .state = TCP_LISTEN,
-};
+struct tcp_connect;
 
 typedef enum connect_state {
   // 刚刚建立连接
@@ -94,7 +90,24 @@ typedef enum connect_state {
   TCP_CONN_CLOSED,
 } connect_state_t;
 
-typedef void (*tcp_handler_t)(tcp_connect_t *conect, connect_state_t state);
+typedef void (*tcp_handler_t)(struct tcp_connect *connect, connect_state_t state);
+
+typedef struct tcp_connect {
+  tcp_state_t state;
+  uint16_t local_port, remote_port;
+  uint8_t ip[NET_IP_LEN];
+  uint32_t unack_seq, next_seq; // tx_buf中前[next_seq - unack_seq]字节已经发送，unack_seq未确认的起始序号，next_seq下一发送序号
+  uint32_t ack;
+  uint16_t remote_mss;
+  uint16_t remote_win;
+  tcp_handler_t *handler;
+  buf_t *rx_buf; // 接收缓存
+  buf_t *tx_buf; // 发送缓存
+} tcp_connect_t;
+
+static const tcp_connect_t CONNECT_LISTEN = {
+    .state = TCP_LISTEN,
+};
 
 void tcp_init();
 
@@ -109,5 +122,8 @@ size_t tcp_connect_write(tcp_connect_t *connect, const uint8_t *data, size_t len
 size_t tcp_connect_read(tcp_connect_t *connect, uint8_t *data, size_t len);
 
 void tcp_in(buf_t *buf, uint8_t *src_ip);
+
+// #define TCP_BUF_SIZE_TX (1024 * 4)
+// #define TCP_BUF_SIZE_RX (1024 * 4)
 
 #endif
