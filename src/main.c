@@ -29,9 +29,9 @@ void tcp_handler(tcp_connect_t *connect, connect_state_t state) {
   uint8_t buf[512];
   size_t len = tcp_connect_read(connect, buf, sizeof(buf) - 1);
   buf[len] = 0;
-  printf("recv tcp packet from %s:%u len=%zu\n",
-         iptos(connect->ip), connect->remote_port, len);
-  printf("%s\n", buf);
+  Log("recv tcp packet from %s:%u len=%zu, content: %s",
+      iptos(connect->ip), connect->remote_port, len, buf);
+  // printf("%s\n", buf);
   if (len) tcp_connect_write(connect, buf, len);
   // else {
   //   const char start_msg[] = "hi there!";
