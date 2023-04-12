@@ -73,32 +73,61 @@ static size_t http_send(tcp_connect_t *tcp, const char *buf, size_t size) {
   return send;
 }
 
+static void http_send_content(tcp_connect_t *tcp, const char *content_type, const char *content, size_t size) {
+  char tx_buffer[4096];
+  sprintf(tx_buffer, "HTTP/1.1 200 OK\n"
+                     "Content-Length: %zu\n"
+                     "Content-Type: %s\n"
+                     "Server: ChiServer\n", size, content_type);
+  size_t len = strlen(tx_buffer);
+  memcpy(tx_buffer + len, content, size);
+  http_send(tcp, tx_buffer, len + size);
+}
+
 static void close_http(tcp_connect_t *tcp) {
   tcp_connect_close(tcp);
   Log("http closed.");
 }
 
-static bool send_local_file(tcp_connect_t *tcp, FILE *f) {
+static bool send_local_file(tcp_connect_t *tcp, FILE *f, const char *content_type) {
   if (!f) {
     Err("http: Not Found!");
     return false;
   }
-  char tx_buffer[1024];
-  size_t sz = 0;
+  char tx_buffer[10240];
+  fseek(f, 0, SEEK_END);
+  size_t filesize = ftell(f);
+  fseek(f, 0, SEEK_SET);
+  sprintf(tx_buffer, "HTTP/1.1 200 OK\n"
+                     "Content-Length: %zu\n"
+                     "Content-Type: %s\n"
+                     "Server: ChiServer/0.1\n\n", filesize, content_type);
+  size_t len = strlen(tx_buffer);
+  Assert(http_send(tcp, tx_buffer, len) == len, "Cannot write http headers!");
+  size_t sz;
   do {
+    // sz = fread(tx_buffer + len, 1, sizeof(tx_buffer) - len, f);
+    // if (sz) http_send(tcp, tx_buffer, sz + len);
     sz = fread(tx_buffer, 1, sizeof(tx_buffer), f);
-    http_send(tcp, tx_buffer, sz);
-  } while (sz > 0);
+    if (sz) http_send(tcp, tx_buffer, sz);
+  } while (sz);
   return true;
 }
 
 static void send_file(tcp_connect_t *tcp, const char *url) {
   // FILE *file;
   // uint32_t size;
-  // const char* content_type = "text/html";
   const char *static_path = "../htmldocs";
   char file_path[255];
-  const char content_404[] = "404 NOT FOUND!";
+  const char content_404[] = "HTTP/1.1 404 NOT FOUND\n"
+                             "Content-Type: text/html\n"
+                             "Content-Length: 233\n"
+                             "Server: ChiServer/0.1\n"
+                             "\n"
+                             "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">\n"
+                             "<title>404 Not Found</title>\n"
+                             "<h1>Not Found</h1>\n"
+                             "<p>The requested URL was not found on the server.  If you entered the URL manually please check your spelling and try again.</p>";
 
   /*
   解析url路径，查看是否是查看XHTTP_DOC_DIR目录下的文件
@@ -117,7 +146,7 @@ static void send_file(tcp_connect_t *tcp, const char *url) {
   }
   Log("http: static file %s", file_path);
   FILE *f = fopen(file_path, "r");
-  if (!send_local_file(tcp, f)) {
+  if (!send_local_file(tcp, f, "text/html")) {
     http_send(tcp, content_404, sizeof(content_404));
   }
 }
@@ -149,14 +178,9 @@ int http_server_open(uint16_t port) {
 
 void http_server_run(void) {
   tcp_connect_t *tcp;
-  char url_path[255];
   char rx_buffer[1024];
 
   while ((tcp = http_fifo_out(&http_fifo_v)) != NULL) {
-    int i;
-    char *c = rx_buffer;
-
-
     /*
     1、调用get_line从rx_buffer中获取一行数据，如果没有数据，则调用close_http关闭tcp，并继续循环
     */
@@ -172,7 +196,10 @@ void http_server_run(void) {
     */
 
     char *p = strstr(rx_buffer, "GET");
-    if (p == NULL) close_http(tcp);
+    if (p == NULL) {
+      close_http(tcp);
+      continue;
+    }
 
     /*
     3、解析GET请求的路径，注意跳过空格，找到GET请求的文件，调用send_file发送文件
