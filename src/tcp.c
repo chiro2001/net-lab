@@ -117,8 +117,11 @@ static uint16_t tcp_checksum(buf_t *buf, uint8_t *src_ip, uint8_t *dst_ip) {
   return checksum;
 }
 
-// static _Thread_local uint16_t delete_port;
+#ifndef _MSC_VER
+static _Thread_local uint16_t delete_port;
+#else
 static uint16_t delete_port;
+#endif
 
 /**
  * @brief tcp_close使用这个函数来查找可以关闭的连接，使用thread-local变量delete_port传递端口号。
@@ -394,12 +397,14 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
 
   if (connect->state == TCP_LISTEN) {
     if (flag.rst) {
-      Err("tcp: close when TCP_LISTEN, reset flag recv");
+      Err("tcp: close when TCP_LISTEN, flag RST recv");
+      display_flags(flag);
       tcp_connect_close(connect);
       return;
     }
     if (!flag.syn) {
       Err("tcp: reset when TCP_LISTEN, not a SYN package at first");
+      display_flags(flag);
       goto reset_tcp;
     }
     init_tcp_connect_rcvd(connect);

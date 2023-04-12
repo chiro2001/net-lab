@@ -114,6 +114,17 @@ static bool send_local_file(tcp_connect_t *tcp, FILE *f, const char *content_typ
   return true;
 }
 
+bool str_endswith(const char *s, const char *patten) {
+  if (patten == NULL || s == NULL) return false;
+  int len = strlen(patten);
+  s = s + strlen(s) - len;
+  while (*s && *patten && *s == *patten) {
+    s++;
+    patten++;
+  }
+  return *s == '\0' && *patten == '\0';
+}
+
 static void send_file(tcp_connect_t *tcp, const char *url) {
   // FILE *file;
   // uint32_t size;
@@ -137,6 +148,7 @@ static void send_file(tcp_connect_t *tcp, const char *url) {
   注意，本实验的WEB服务器网页存放在XHTTP_DOC_DIR目录中
   */
 
+  char *content_type = "text/html";
   if (!*url) return;
   if (*url == '/' && *(url + 1) == '\0') {
     sprintf(file_path, "%s/%s", static_path, "index.html");
@@ -146,7 +158,12 @@ static void send_file(tcp_connect_t *tcp, const char *url) {
   }
   Log("http: static file %s", file_path);
   FILE *f = fopen(file_path, "r");
-  if (!send_local_file(tcp, f, "text/html")) {
+  if (str_endswith(file_path, ".jpg")) {
+    content_type = "image/jpeg";
+  } else if (str_endswith(file_path, ".css")) {
+    content_type = "text/css";
+  }
+  if (!send_local_file(tcp, f, content_type)) {
     http_send(tcp, content_404, sizeof(content_404));
   }
 }
