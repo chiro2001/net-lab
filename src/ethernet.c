@@ -40,7 +40,7 @@ void ethernet_in(buf_t *buf) {
  */
 void ethernet_out(buf_t *buf, const uint8_t *mac, net_protocol_t protocol) {
   protocol = swap16(protocol);
-  Log("ethernet: out, mac=%s, protocol=%x, payload size=%zu", mactos(mac), protocol, buf->len);
+  Dbg("ethernet: out, mac=%s, protocol=%x, payload size=%zu", mactos(mac), protocol, buf->len);
   // if smaller than 46, pad it
   if (buf->len < 46) {
     buf_add_padding(buf, 46 - buf->len);

@@ -78,7 +78,7 @@ int tcp_open(uint16_t port, tcp_handler_t handler) {
  * @param connect
  */
 static void init_tcp_connect_rcvd(tcp_connect_t *connect) {
-  Log("tcp: to RCVD state");
+  Dbg("tcp: to RCVD state");
   if (connect->state == TCP_LISTEN) {
     connect->rx_buf = malloc(sizeof(buf_t));
     connect->tx_buf = malloc(sizeof(buf_t));
@@ -185,8 +185,8 @@ static uint16_t tcp_write_to_buf(tcp_connect_t *connect, buf_t *buf) {
  * @param flags
  */
 static void tcp_send(buf_t *buf, tcp_connect_t *connect, tcp_flags_t flags) {
-  Log("tcp: send sz=%zu, flags=%x", buf->len, *((uint8_t *) &flags));
-  display_flags(flags);
+  Dbg("tcp: send sz=%zu, flags=%x", buf->len, *((uint8_t *) &flags));
+  // display_flags(flags);
   size_t prev_len = buf->len;
   buf_add_header(buf, sizeof(tcp_hdr_t));
   tcp_hdr_t *hdr = (tcp_hdr_t *) buf->data;
@@ -282,7 +282,7 @@ size_t tcp_connect_write(tcp_connect_t *connect, const uint8_t *data, size_t len
  * @param src_ip
  */
 void tcp_in(buf_t *buf, uint8_t *src_ip) {
-  Log("tcp: in from %s", iptos(src_ip));
+  Dbg("tcp: in from %s", iptos(src_ip));
 
   /*
   1、大小检查，检查buf长度是否小于tcp头部，如果是，则丢弃
@@ -319,7 +319,7 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
   uint32_t got_ack = swap32(p->ack_number32);
   tcp_flags_t flag = p->flags;
 
-  display_flags(flag);
+  // display_flags(flag);
 
   /*
   4、调用map_get函数，根据destination port查找对应的handler函数
@@ -373,20 +373,7 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
 
   uint16_t window_size = swap16(p->window_size16);
 
-  if (connect->state == TCP_LISTEN) Log("tcp: connection state == TCP_LISTEN");
-  else if (connect->state == TCP_SYN_SEND) Log("tcp: connection state == TCP_SYN_SEND");
-  else if (connect->state == TCP_SYN_RCVD) Log("tcp: connection state == TCP_SYN_RCVD");
-  else if (connect->state == TCP_ESTABLISHED) Log("tcp: connection state == TCP_ESTABLISHED");
-  else if (connect->state == TCP_FIN_WAIT_1) Log("tcp: connection state == TCP_FIN_WAIT_1");
-  else if (connect->state == TCP_FIN_WAIT_2) Log("tcp: connection state == TCP_FIN_WAIT_2");
-  else if (connect->state == TCP_CLOSE_WAIT) Log("tcp: connection state == TCP_CLOSE_WAIT");
-  else if (connect->state == TCP_CLOSING) Log("tcp: connection state == TCP_CLOSING");
-  else if (connect->state == TCP_LAST_ACK) Log("tcp: connection state == TCP_LAST_ACK");
-  else if (connect->state == TCP_TIME_WAIT) Log("tcp: connection state == TCP_TIME_WAIT");
-  else
-    Log("tcp: connection state == UNKNOWN");
-
-  Log("tcp: connect-> unack_seq=%u, next_seq=%u, ack=%u; p-> seq=%u, ack=%u", connect->unack_seq, connect->next_seq,
+  Dbg("tcp: connect-> unack_seq=%u, next_seq=%u, ack=%u; p-> seq=%u, ack=%u", connect->unack_seq, connect->next_seq,
       connect->ack, got_seq, got_ack);
 
   /*
@@ -495,7 +482,7 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
           buf_remove_header(connect->tx_buf, got_ack - connect->unack_seq);
           connect->unack_seq = got_ack;
         } else {
-          Log("tcp: when ESTABLISHED, no ACK or ..., ignore :: unack_seq=%u, got_seq=%u, ack=%u, next_seq=%u",
+          Dbg("tcp: when ESTABLISHED, no ACK or ..., ignore :: unack_seq=%u, got_seq=%u, ack=%u, next_seq=%u",
               connect->unack_seq, got_seq, got_ack, connect->next_seq);
         }
         /*

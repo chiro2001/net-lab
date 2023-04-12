@@ -74,7 +74,7 @@ void ip_in(buf_t *buf, uint8_t *src_mac) {
  * @param mf 分片mf标志，是否有下一个分片
  */
 void ip_fragment_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol, int id, uint16_t offset, int mf) {
-  Log("ip: ip_fragment_out ip=%s, id=%d, offset=%d, mf=%d, len=%zu", iptos(ip), id, offset, mf, buf->len);
+  Dbg("ip: ip_fragment_out ip=%s, id=%d, offset=%d, mf=%d, len=%zu", iptos(ip), id, offset, mf, buf->len);
   buf_add_header(buf, sizeof(ip_hdr_t));
   ip_hdr_t *p = (ip_hdr_t *) buf->data;
   p->version = IP_VERSION_4;
@@ -105,7 +105,7 @@ void ip_fragment_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol, int id, u
 void ip_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol) {
   if (ip[0] == 0) Err("ip: out to %s", iptos(ip));
   else
-    Log("ip: out to %s", iptos(ip));
+    Dbg("ip: out to %s", iptos(ip));
   // check if ip package larger than MTU - ip header
   const size_t ip_max_length = ETHERNET_MAX_TRANSPORT_UNIT - sizeof(ip_hdr_t);
   if (buf->len > ip_max_length) {
@@ -142,7 +142,7 @@ void ip_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol) {
     buf->data = original_data;
     buf->len = original_len;
   } else {
-    Log("ip: handle small package(%zu bytes)", buf->len);
+    Dbg("ip: handle small package(%zu bytes)", buf->len);
     ip_fragment_out(buf, ip, protocol, ip_id++, 0, 0);
   }
 }
