@@ -437,7 +437,6 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
   11、序号相同时的处理，调用buf_remove_header去除头部后剩下的都是数据
   */
 
-  // what '序号相同' means...?
   buf_remove_header(buf, sizeof(tcp_hdr_t));
 
   /* 状态转换

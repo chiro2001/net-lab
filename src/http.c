@@ -78,13 +78,27 @@ static void close_http(tcp_connect_t *tcp) {
   Log("http closed.");
 }
 
+static bool send_local_file(tcp_connect_t *tcp, FILE *f) {
+  if (!f) {
+    Err("http: Not Found!");
+    return false;
+  }
+  char tx_buffer[1024];
+  size_t sz = 0;
+  do {
+    sz = fread(tx_buffer, 1, sizeof(tx_buffer), f);
+    http_send(tcp, tx_buffer, sz);
+  } while (sz > 0);
+  return true;
+}
 
 static void send_file(tcp_connect_t *tcp, const char *url) {
-  FILE *file;
-  uint32_t size;
+  // FILE *file;
+  // uint32_t size;
   // const char* content_type = "text/html";
+  const char *static_path = "../htmldocs";
   char file_path[255];
-  char tx_buffer[1024];
+  const char content_404[] = "404 NOT FOUND!";
 
   /*
   解析url路径，查看是否是查看XHTTP_DOC_DIR目录下的文件
@@ -94,8 +108,18 @@ static void send_file(tcp_connect_t *tcp, const char *url) {
   注意，本实验的WEB服务器网页存放在XHTTP_DOC_DIR目录中
   */
 
-  // TODO
-
+  if (!*url) return;
+  if (*url == '/' && *(url + 1) == '\0') {
+    sprintf(file_path, "%s/%s", static_path, "index.html");
+  } else {
+    if (*url == '/') sprintf(file_path, "%s/%s", static_path, url + 1);
+    else sprintf(file_path, "%s/%s", static_path, url);
+  }
+  Log("http: static file %s", file_path);
+  FILE *f = fopen(file_path, "r");
+  if (!send_local_file(tcp, f)) {
+    http_send(tcp, content_404, sizeof(content_404));
+  }
 }
 
 static void http_handler(tcp_connect_t *tcp, connect_state_t state) {
@@ -137,30 +161,38 @@ void http_server_run(void) {
     1、调用get_line从rx_buffer中获取一行数据，如果没有数据，则调用close_http关闭tcp，并继续循环
     */
 
-    // TODO
-
+    if (get_line(tcp, rx_buffer, sizeof(rx_buffer)) == 0) {
+      close_http(tcp);
+      continue;
+    }
+    Log("http: first line %s", rx_buffer);
 
     /*
     2、检查是否有GET请求，如果没有，则调用close_http关闭tcp，并继续循环
     */
 
-    // TODO
-
+    char *p = strstr(rx_buffer, "GET");
+    if (p == NULL) close_http(tcp);
 
     /*
     3、解析GET请求的路径，注意跳过空格，找到GET请求的文件，调用send_file发送文件
     */
 
-    // TODO
-
+    p += 3;
+    while (*p && *p == ' ') p++;
+    char *path = p;
+    while (*p && *p != ' ') p++;
+    *p = '\0';
+    Log("http: got path %s", path);
+    send_file(tcp, path);
 
     /*
     4、调用close_http关掉连接
     */
 
-    // TODO
+    close_http(tcp);
+    continue;
 
-
-    Log("!! final close\n");
+    Err("!! final close\n");
   }
 }
