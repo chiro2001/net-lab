@@ -8,7 +8,7 @@
  * @param ip ip地址
  * @return char* 生成的字符串
  */
-char *iptos(uint8_t *ip) {
+char *iptos(const uint8_t *ip) {
   static char output[3 * 4 + 3 + 1];
   sprintf(output, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
   return output;
@@ -20,7 +20,7 @@ char *iptos(uint8_t *ip) {
  * @param mac mac地址
  * @return char* 生成的字符串
  */
-char *mactos(uint8_t *mac) {
+char *mactos(const uint8_t *mac) {
   static char output[2 * 6 + 5 + 1];
   sprintf(output, "%02X-%02X-%02X-%02X-%02X-%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
   return output;

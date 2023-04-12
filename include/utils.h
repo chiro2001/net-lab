@@ -26,9 +26,9 @@ static inline uint32_t min32(uint32_t a, uint32_t b) {
   return a < b ? a : b;
 }
 
-char *iptos(uint8_t *ip);
+char *iptos(const uint8_t *ip);
 
-char *mactos(uint8_t *mac);
+char *mactos(const uint8_t *mac);
 
 char *timetos(time_t timestamp);
 
