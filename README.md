@@ -19,7 +19,7 @@ HITsz 2023 spring Computer Networking Lab
 - [x] udp
 - [ ] ping
 - [ ] ip package out-of-order arrange
-- [ ] tcp
-- [ ] http
+- [x] tcp
+- [x] http
 - [ ] Test: zero-copy ip fragment
 - [ ] kcp
