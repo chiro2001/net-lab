@@ -103,7 +103,9 @@ void ip_fragment_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol, int id, u
  * @param protocol 上层协议
  */
 void ip_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol) {
-  Log("ip: out to %s", iptos(ip));
+  if (ip[0] == 0) Err("ip: out to %s", iptos(ip));
+  else
+    Log("ip: out to %s", iptos(ip));
   // check if ip package larger than MTU - ip header
   const size_t ip_max_length = ETHERNET_MAX_TRANSPORT_UNIT - sizeof(ip_hdr_t);
   if (buf->len > ip_max_length) {
