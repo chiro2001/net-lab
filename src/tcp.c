@@ -336,7 +336,7 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
   */
 
   tcp_key_t key = new_tcp_key(src_ip, src_port, dst_port);
-  Log("tcp: KEY = (src=%s, src_port=%d, dst_port=%d)", iptos(key.ip), key.src_port, key.dst_port);
+  Dbg("tcp: KEY = (src=%s, src_port=%d, dst_port=%d)", iptos(key.ip), key.src_port, key.dst_port);
 
   /*
   6、调用map_get函数，根据key查找一个tcp_connect_t* connect，
@@ -364,7 +364,7 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
     connect = (tcp_connect_t *) map_get(&connect_table, &key);
     Ok("tcp: create new connection %p", connect);
   } else {
-    Ok("tcp: using created connection %p", connect);
+    Dbg("tcp: using created connection %p", connect);
   }
 
   /*
@@ -407,7 +407,7 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
   if (connect->state == TCP_LISTEN) {
     if (flag.rst) {
       Err("tcp: close when TCP_LISTEN, reset flag recv");
-      tcp_close(dst_port);
+      tcp_connect_close(connect);
       return;
     }
     if (!flag.syn) {
@@ -442,7 +442,7 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
 
   if (flag.rst) {
     Err("tcp: reset caused by RST flag received");
-    tcp_close(dst_port);
+    tcp_connect_close(connect);
     goto reset_tcp;
   }
 
@@ -564,6 +564,7 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
         (*handler)(connect, TCP_CONN_CLOSED);
         tcp_connect_close(connect);
       }
+      break;
     default:
       panic("tcp: unknown connect->state %d", connect->state);
       break;

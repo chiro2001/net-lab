@@ -33,11 +33,11 @@ void tcp_handler(tcp_connect_t *connect, connect_state_t state) {
          iptos(connect->ip), connect->remote_port, len);
   printf("%s\n", buf);
   if (len) tcp_connect_write(connect, buf, len);
-  else {
-    const char start_msg[] = "hi there!";
-    Log("tcp handler: sending msg %s", start_msg);
-    tcp_connect_write(connect, (uint8_t *) start_msg, sizeof(start_msg));
-  }
+  // else {
+  //   const char start_msg[] = "hi there!";
+  //   Log("tcp handler: sending msg %s", start_msg);
+  //   tcp_connect_write(connect, (uint8_t *) start_msg, sizeof(start_msg));
+  // }
 }
 
 #endif
