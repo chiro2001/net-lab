@@ -22,13 +22,13 @@ static const tcp_flags_t tcp_flags_ack_syn = {.ack = 1, .syn = 1};
 static const tcp_flags_t tcp_flags_ack_fin = {.ack = 1, .fin = 1};
 static const tcp_flags_t tcp_flags_ack_rst = {.ack = 1, .rst = 1};
 // used only to check
-static const tcp_flags_t tcp_flags_rst = {.rst = 1};
-static const tcp_flags_t tcp_flags_syn = {.syn = 1};
-static const tcp_flags_t tcp_flags_fin = {.fin = 1};
+// static const tcp_flags_t tcp_flags_rst = {.rst = 1};
+// static const tcp_flags_t tcp_flags_syn = {.syn = 1};
+// static const tcp_flags_t tcp_flags_fin = {.fin = 1};
 
-static uint8_t tcp_flags_and(tcp_flags_t flags, tcp_flags_t ref) {
-  return (*(uint8_t *) &flags) & (*(uint8_t *) &ref);
-}
+// static uint8_t tcp_flags_and(tcp_flags_t flags, tcp_flags_t ref) {
+//   return (*(uint8_t *) &flags) & (*(uint8_t *) &ref);
+// }
 
 // static uint8_t tcp_flags_not(tcp_flags_t flags, tcp_flags_t ref) {
 //   return (*(uint8_t *) &flags) & (~(*(uint8_t *) &ref));

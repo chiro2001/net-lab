@@ -52,7 +52,7 @@ int buf_add_header(buf_t *buf, size_t len) {
  */
 int buf_remove_header(buf_t *buf, size_t len) {
   if (buf->len < len) {
-    Err("Error in buf_remove_header:%zu-%zu", buf->len, len);
+    Err("Error in buf_remove_header: len_now=%zu, len=%zu ", buf->len, len);
     return -1;
   }
   buf->len -= len;

@@ -345,20 +345,24 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
 
   tcp_connect_t *connect = (tcp_connect_t *) map_get(&connect_table, &key);
   if (!connect) {
-    // connect not found, create a new connect
+    // connect not found, create a new connect.
+    // NOTE that this `connect` is not the same location as the `connect` in the map.
     connect = malloc(sizeof(tcp_connect_t));
-    Ok("tcp: create new connection %p", connect);
     memset(connect, 0, sizeof(tcp_connect_t));
     connect->state = TCP_LISTEN;
     // connect->local_port = dst_port;
     // connect->remote_port = src_port;
     memcpy(connect->ip, src_ip, NET_IP_LEN);
-    // connect->handler = handler;
+    connect->handler = handler;
     // connect->tx_buf = malloc(sizeof(buf_t));
     // connect->rx_buf = malloc(sizeof(buf_t));
     // buf_init(connect->tx_buf, TCP_BUF_SIZE_TX);
     // buf_init(connect->rx_buf, TCP_BUF_SIZE_RX);
     Assert(map_set(&connect_table, &key, connect) == 0, "Cannot insert connection table!");
+    free(connect);
+    // update pointer
+    connect = (tcp_connect_t *) map_get(&connect_table, &key);
+    Ok("tcp: create new connection %p", connect);
   } else {
     Ok("tcp: using created connection %p", connect);
   }
@@ -398,12 +402,12 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
     Log("tcp: connection state == UNKNOWN");
 
   if (connect->state == TCP_LISTEN) {
-    if (tcp_flags_and(flag, tcp_flags_rst)) {
+    if (flag.rst) {
       Err("tcp: close when TCP_LISTEN, reset flag recv");
       tcp_close(dst_port);
       return;
     }
-    if (!tcp_flags_and(flag, tcp_flags_syn)) {
+    if (!flag.syn) {
       Err("tcp: reset when TCP_LISTEN, not a SYN package at first");
       goto reset_tcp;
     }
@@ -424,8 +428,8 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
   9、检查接收到的sequence number，如果与ack序号不一致,则reset_tcp复位通知。
   */
 
-  if (got_seq != ack) {
-    Err("tcp: reset caused by got_seq(%d) != connect->ack(%d)", got_seq, ack);
+  if (got_seq != connect->ack) {
+    Err("tcp: reset caused by got_seq(%u) != connect->ack(%u)", got_seq, connect->ack);
     goto reset_tcp;
   }
 
@@ -433,7 +437,7 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
   10、检查flags是否有rst标志，如果有，则close_tcp连接重置
   */
 
-  if (tcp_flags_and(flag, tcp_flags_rst)) {
+  if (flag.rst) {
     Err("tcp: reset caused by RST flag received");
     tcp_close(dst_port);
     goto reset_tcp;
@@ -452,7 +456,7 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
       panic("switch TCP_LISTEN");
       break;
     case TCP_SYN_RCVD:
-      if (!tcp_flags_and(flag, tcp_flags_ack)) {
+      if (!flag.ack) {
         // 12、在RCVD状态，如果收到的包没有ack flag，则不做任何处理
         Err("tcp: no ACK flag, ignore");
       } else {
@@ -464,12 +468,12 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
         */
         connect->unack_seq++;
         connect->state = TCP_ESTABLISHED;
-        Ok("tcp: state -> TCP_ESTABLISHED, call handler");
+        Ok("tcp: state -> TCP_ESTABLISHED, call handler %p", *connect->handler);
         (*connect->handler)(connect, TCP_CONN_CONNECTED);
       }
       break;
     case TCP_ESTABLISHED:
-      if (!tcp_flags_and(flag, tcp_flags_ack_fin)) {
+      if (!flag.ack && !flag.fin) {
         /*
         14、如果收到的包没有ack且没有fin这两个标志，则不做任何处理
         */
@@ -483,7 +487,7 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
             则调用buf_remove_header函数，去掉被对端接收确认的部分数据，并更新unack_seq值
 
         */
-        if (tcp_flags_and(flag, tcp_flags_ack) && connect->unack_seq < got_seq && connect->next_seq > got_seq) {
+        if (flag.ack && connect->unack_seq < got_seq && connect->next_seq > got_seq) {
           buf_remove_header(connect->tx_buf, got_seq - connect->unack_seq);
           connect->unack_seq = got_seq;
           /*
@@ -501,7 +505,7 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
               （5）没有收到数据，可能对方只发一个ACK，可以不响应
           */
           buf_init(&txbuf, 0);
-          if (tcp_flags_and(flag, tcp_flags_fin)) {
+          if (flag.fin) {
             connect->state = TCP_LAST_ACK;
             connect->ack++;
             tcp_send(&txbuf, connect, tcp_flags_ack_fin);
@@ -518,7 +522,8 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
             }
           }
         } else {
-          Err("tcp: when ESTABLISHED, no ACK or ..., ignore");
+          Err("tcp: when ESTABLISHED, no ACK or ..., ignore :: unack_seq=%u, got_seq=%u, next_seq=%u",
+              connect->unack_seq, got_seq, connect->next_seq);
         }
       }
       break;
@@ -530,9 +535,9 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
       18、如果收到FIN && ACK，则close_tcp直接关闭TCP
           如果只收到ACK，则将状态转为TCP_FIN_WAIT_2
       */
-      if (tcp_flags_and(flag, tcp_flags_ack_fin) == *((uint8_t *) &tcp_flags_ack_fin)) {
+      if (flag.fin && flag.ack) {
         tcp_close(dst_port);
-      } else if (tcp_flags_and(flag, tcp_flags_ack)) {
+      } else if (flag.ack) {
         connect->state = TCP_FIN_WAIT_2;
       }
       break;
@@ -541,7 +546,7 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
       19、如果不是FIN，则不做处理
           如果是，则将ACK +1，调用buf_init初始化txbuf，调用tcp_send发送一个ACK数据包，再close_tcp关闭TCP
       */
-      if (tcp_flags_and(flag, tcp_flags_fin)) {
+      if (flag.fin) {
         connect->ack++;
         buf_init(&txbuf, 0);
         tcp_send(&txbuf, connect, tcp_flags_ack);
@@ -553,7 +558,7 @@ void tcp_in(buf_t *buf, uint8_t *src_ip) {
       20、如果不是ACK，则不做处理
           如果是，则调用handler函数，进入TCP_CONN_CLOSED状态，，再close_tcp关闭TCP
       */
-      if (tcp_flags_and(flag, tcp_flags_ack)) {
+      if (flag.ack) {
         (*handler)(connect, TCP_CONN_CLOSED);
         tcp_close(dst_port);
       }
