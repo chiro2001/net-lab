@@ -17,6 +17,7 @@ void ethernet_in(buf_t *buf) {
         mactos(hdr->src), length_type, length_type);
     if (46 <= length_type && length_type <= 1500) {
       // this is a length field
+      Err("ethernet: unknown protocol! length = %d", length_type);
     } else if (length_type >= 0x0600) {
       // this is a type field
       buf_remove_header(buf, sizeof(ether_hdr_t));
