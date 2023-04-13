@@ -57,7 +57,7 @@ aux_source_directory(./src DIR_SRCS)
 add_executable(main ${DIR_SRCS})
 target_link_libraries(main ${PCAP})
 
-add_definitions(-DCONFIG_DEBUG=1)
+# add_definitions(-DCONFIG_DEBUG=1)
 
 set(TEST_FIX_SOURCE 
     testing/faker/driver.c 
