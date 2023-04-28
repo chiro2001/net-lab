@@ -60,6 +60,8 @@ void udp_in(buf_t *buf, uint8_t *src_ip) {
     Log("udp: too short package! len(%zu) < udp_header_size(%llu)", buf->len, sizeof(udp_hdr_t));
     return;
   }
+  uint8_t src_ip_copy[NET_IP_LEN];
+  memcpy(src_ip_copy, src_ip, sizeof(src_ip_copy));
   udp_hdr_t *p = (udp_hdr_t *) buf->data;
   uint16_t total_len = swap16(p->total_len16);
   if (buf->len < total_len) {
@@ -78,7 +80,7 @@ void udp_in(buf_t *buf, uint8_t *src_ip) {
     Log("udp: ignore checksum");
   } else {
     p->checksum16 = 0;
-    uint16_t checksum_actual = udp_checksum(buf, src_ip, net_if_ip);
+    uint16_t checksum_actual = udp_checksum(buf, src_ip_copy, net_if_ip);
     if (checksum_expected != checksum_actual) {
       Log("udp: checksum error! expected=%x, actual=%x", checksum_expected, checksum_actual);
       return;
@@ -89,7 +91,7 @@ void udp_in(buf_t *buf, uint8_t *src_ip) {
   udp_handler_t *handler = (udp_handler_t *) map_get(&udp_table, &dst_port);
   if (handler) {
     Log("udp: successfully call handler for port %d: %p", dst_port, handler);
-    (*handler)(buf->data + sizeof(udp_hdr_t), buf->len - sizeof(udp_hdr_t), src_ip, swap16(p->src_port16));
+    (*handler)(buf->data + sizeof(udp_hdr_t), buf->len - sizeof(udp_hdr_t), src_ip_copy, swap16(p->src_port16));
   } else {
     Log("udp: no handler for port %d!", swap16(p->dst_port16));
   }
