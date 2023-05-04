@@ -40,6 +40,11 @@ void ip_in(buf_t *buf, uint8_t *src_mac) {
     icmp_unreachable(buf, p->src_ip, ICMP_CODE_PROTOCOL_UNREACH);
     return;
   }
+  // check ip destination
+  if (memcmp(p->dst_ip, net_if_ip, NET_IP_LEN)) {
+    Log("ip: destination is %s, not mine", iptos(p->dst_ip));
+    return;
+  }
   // checksum
   uint16_t checksum_expected = p->hdr_checksum16;
   p->hdr_checksum16 = 0;
