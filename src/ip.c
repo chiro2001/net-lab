@@ -41,7 +41,7 @@ void ip_in(buf_t *buf, uint8_t *src_mac) {
     return;
   }
   // check ip destination
-  if (memcmp(p->dst_ip, net_if_ip, NET_IP_LEN)) {
+  if (memcmp(p->dst_ip, net_if_ip, NET_IP_LEN) != 0) {
     Log("ip: destination is %s, not mine", iptos(p->dst_ip));
     return;
   }
